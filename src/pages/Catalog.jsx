@@ -10,23 +10,15 @@ const TIPO_CATS = [
   { key: 'ropa', label: '👔 Ropa' },
 ]
 
-const SORT_OPTIONS = [
-  { key: 'recent', label: 'Más recientes' },
-  { key: 'price_asc', label: 'Precio ↑' },
-  { key: 'price_desc', label: 'Precio ↓' },
-  { key: 'name_asc', label: 'Nombre A→Z' },
-]
-
-export default function Catalog({ products, loading, onSelectProduct }) {
+export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav }) {
   const [search, setSearch] = useState('')
   const [tipoCat, setTipoCat] = useState('all')
-  const [versionFilter, setVersionFilter] = useState('all') // all | fan | player
-  const [stockFilter, setStockFilter] = useState('all') // all | stock | pedido
+  const [versionFilter, setVersionFilter] = useState('all')
+  const [stockFilter, setStockFilter] = useState('all')
   const [activeTag, setActiveTag] = useState('')
   const [sortBy, setSortBy] = useState('recent')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Get all unique tags from products
   const allTags = useMemo(() => {
     const tags = new Set()
     products.forEach(p => p.categorias?.forEach(c => tags.add(c)))
@@ -55,23 +47,23 @@ export default function Catalog({ products, loading, onSelectProduct }) {
 
   return (
     <div style={{ paddingTop: '20px' }}>
-      {/* Search bar */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+      {/* Search */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#141414', border: '1px solid #1e1e1e', borderRadius: '10px', padding: '10px 14px', gap: '8px' }}>
           <span style={{ color: '#444', fontSize: '16px' }}>🔍</span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, equipo, país..."
             style={{ background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', flex: 1 }} />
-          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: '#555', fontSize: '18px' }}>×</button>}
+          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: '#555', fontSize: '18px', cursor: 'pointer' }}>×</button>}
         </div>
-        <button onClick={() => setShowFilters(!showFilters)} style={{ background: showFilters ? '#cc1a1a' : '#141414', border: `1px solid ${showFilters ? '#cc1a1a' : '#1e1e1e'}`, color: showFilters ? '#fff' : '#888', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        <button onClick={() => setShowFilters(!showFilters)} style={{ background: showFilters ? '#cc1a1a' : '#141414', border: `1px solid ${showFilters ? '#cc1a1a' : '#1e1e1e'}`, color: showFilters ? '#fff' : '#888', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
           ⚙ Filtros
         </button>
       </div>
 
       {/* Category tabs */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '4px' }}>
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px' }}>
         {TIPO_CATS.map(cat => (
-          <button key={cat.key} onClick={() => setTipoCat(cat.key)} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: '20px', border: `1px solid ${tipoCat === cat.key ? '#cc1a1a' : '#2a2a2a'}`, background: tipoCat === cat.key ? '#cc1a1a' : '#141414', color: tipoCat === cat.key ? '#fff' : '#888', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          <button key={cat.key} onClick={() => setTipoCat(cat.key)} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: '20px', border: `1px solid ${tipoCat === cat.key ? '#cc1a1a' : '#2a2a2a'}`, background: tipoCat === cat.key ? '#cc1a1a' : '#141414', color: tipoCat === cat.key ? '#fff' : '#888', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             {cat.label}
           </button>
         ))}
@@ -81,40 +73,39 @@ export default function Catalog({ products, loading, onSelectProduct }) {
       {showFilters && (
         <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
-            {/* Version filter */}
             <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>Versión</div>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Versión</div>
               <div style={{ display: 'flex', gap: '5px' }}>
-                {[['all','Todas'],['fan','Fan'],['player','Player']].map(([v, l]) => (
-                  <button key={v} onClick={() => setVersionFilter(v)} style={{ padding: '5px 12px', borderRadius: '8px', border: `1px solid ${versionFilter === v ? '#cc1a1a' : '#2a2a2a'}`, background: versionFilter === v ? '#cc1a1a' : '#1e1e1e', color: versionFilter === v ? '#fff' : '#888', fontSize: '12px', fontWeight: 600 }}>{l}</button>
+                {[['all','Todas'],['fan','Fan'],['player','Player']].map(([v,l]) => (
+                  <button key={v} onClick={() => setVersionFilter(v)} style={{ padding: '5px 12px', borderRadius: '8px', border: `1px solid ${versionFilter===v?'#cc1a1a':'#2a2a2a'}`, background: versionFilter===v?'#cc1a1a':'#1e1e1e', color: versionFilter===v?'#fff':'#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>{l}</button>
                 ))}
               </div>
             </div>
-            {/* Stock filter */}
             <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>Disponibilidad</div>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Disponibilidad</div>
               <div style={{ display: 'flex', gap: '5px' }}>
-                {[['all','Todo'],['stock','En stock'],['pedido','A pedido']].map(([v, l]) => (
-                  <button key={v} onClick={() => setStockFilter(v)} style={{ padding: '5px 12px', borderRadius: '8px', border: `1px solid ${stockFilter === v ? '#cc1a1a' : '#2a2a2a'}`, background: stockFilter === v ? '#cc1a1a' : '#1e1e1e', color: stockFilter === v ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}>{l}</button>
+                {[['all','Todo'],['stock','En stock'],['pedido','A pedido']].map(([v,l]) => (
+                  <button key={v} onClick={() => setStockFilter(v)} style={{ padding: '5px 12px', borderRadius: '8px', border: `1px solid ${stockFilter===v?'#cc1a1a':'#2a2a2a'}`, background: stockFilter===v?'#cc1a1a':'#1e1e1e', color: stockFilter===v?'#fff':'#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>{l}</button>
                 ))}
               </div>
             </div>
-            {/* Sort */}
             <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>Ordenar</div>
-              <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: '#1e1e1e', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '6px 10px', color: '#ccc', fontSize: '12px', outline: 'none' }}>
-                {SORT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Ordenar</div>
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: '#1e1e1e', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '6px 10px', color: '#ccc', fontSize: '12px', outline: 'none', cursor: 'pointer' }}>
+                <option value="recent">Más recientes</option>
+                <option value="price_asc">Precio ↑</option>
+                <option value="price_desc">Precio ↓</option>
+                <option value="name_asc">Nombre A→Z</option>
               </select>
             </div>
           </div>
-          {/* Tag filters */}
           {allTags.length > 0 && (
             <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px' }}>Etiquetas</div>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Etiquetas</div>
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                <button onClick={() => setActiveTag('')} style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${!activeTag ? '#cc1a1a' : '#2a2a2a'}`, background: !activeTag ? '#cc1a1a' : '#1e1e1e', color: !activeTag ? '#fff' : '#888', fontSize: '11px', fontWeight: 600 }}>Todas</button>
+                <button onClick={() => setActiveTag('')} style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${!activeTag?'#cc1a1a':'#2a2a2a'}`, background: !activeTag?'#cc1a1a':'#1e1e1e', color: !activeTag?'#fff':'#888', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>Todas</button>
                 {allTags.map(tag => (
-                  <button key={tag} onClick={() => setActiveTag(tag === activeTag ? '' : tag)} style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${activeTag === tag ? '#cc1a1a' : '#2a2a2a'}`, background: activeTag === tag ? '#cc1a1a' : '#1e1e1e', color: activeTag === tag ? '#fff' : '#888', fontSize: '11px', fontWeight: 600 }}>{tag}</button>
+                  <button key={tag} onClick={() => setActiveTag(tag===activeTag?'':tag)} style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${activeTag===tag?'#cc1a1a':'#2a2a2a'}`, background: activeTag===tag?'#cc1a1a':'#1e1e1e', color: activeTag===tag?'#fff':'#888', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>{tag}</button>
                 ))}
               </div>
             </div>
@@ -122,10 +113,8 @@ export default function Catalog({ products, loading, onSelectProduct }) {
         </div>
       )}
 
-      {/* Results count */}
-      <div style={{ fontSize: '12px', color: '#555', marginBottom: '14px' }}>{filtered.length} producto{filtered.length !== 1 ? 's' : ''}</div>
+      <div style={{ fontSize: '12px', color: '#555', marginBottom: '14px' }}>{filtered.length} producto{filtered.length!==1?'s':''}</div>
 
-      {/* Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#444' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🐺</div>
@@ -138,7 +127,7 @@ export default function Catalog({ products, loading, onSelectProduct }) {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px' }}>
-          {filtered.map(p => <ProductCard key={p.id} product={p} onClick={() => onSelectProduct(p)} />)}
+          {filtered.map(p => <ProductCard key={p.id} product={p} onClick={() => onSelectProduct(p)} isFav={favorites.includes(p.id)} onToggleFav={onToggleFav} />)}
         </div>
       )}
     </div>

@@ -1,135 +1,156 @@
 import { useState } from 'react'
-import { STORAGE_URL } from '../lib/supabase'
+import { supabase, STORAGE_URL } from '../lib/supabase'
 
-export default function Cart({ cart, removeFromCart, onClose, config }) {
-  const [orderView, setOrderView] = useState(false)
+const XL_SIZES = ['XL', 'XXL', 'XXXL']
+
+export default function Cart({ cart, removeFromCart, onClose, config, clearCart }) {
+  const [step, setStep] = useState('cart') // cart | form | confirm
+  const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [correo, setCorreo] = useState('')
+  const [notas, setNotas] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [orderId, setOrderId] = useState(null)
 
   const total = cart.reduce((a, b) => a + b.total, 0)
 
-  // Generate order text in the exact WhatsApp format
-  function generateOrderText() {
-    return cart.map(item => {
-      const lines = []
-      lines.push(`Talla:\t${item.size}`)
-      lines.push(`Versión: ${item.version}`)
-      if (item.estName) lines.push(`Nombre:\t${item.estName}`)
-      if (item.estNum) lines.push(`Número:\t${item.estNum}`)
-      return lines.join('\n')
-    }).join('\n\n---\n\n')
+  async function submitOrder() {
+    if (!nombre.trim()) return alert('Ingresa tu nombre')
+    if (!telefono.trim() && !correo.trim()) return alert('Ingresa al menos teléfono o correo')
+    setSaving(true)
+    const items = cart.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      image: item.image,
+      size: item.size,
+      version: item.version,
+      estampado: item.estampado,
+      estName: item.estName,
+      estNum: item.estNum,
+      stockType: item.stockType,
+      unitPrice: item.unitPrice,
+      total: item.total,
+    }))
+    const { data, error } = await supabase.from('pedidos').insert({
+      cliente_nombre: nombre.trim(),
+      cliente_telefono: telefono.trim(),
+      cliente_correo: correo.trim(),
+      items,
+      notas: notas.trim(),
+      estado: 'pendiente'
+    }).select('id').single()
+    setSaving(false)
+    if (error) { alert('Error al enviar pedido: ' + error.message); return }
+    setOrderId(data.id.slice(0, 8).toUpperCase())
+    setStep('confirm')
+    clearCart()
   }
 
-  // Generate summary for me (internal)
-  function generateSummary() {
-    return cart.map((item, i) => {
-      const lines = [`*${i + 1}. ${item.productName}*`]
-      lines.push(`Talla: ${item.size} | Versión: ${item.version}`)
-      if (item.estName || item.estNum) lines.push(`Estampado: ${item.estName || '-'} #${item.estNum || '-'}`)
-      lines.push(`Precio: $${item.total.toLocaleString('es-CL')}`)
-      return lines.join('\n')
-    }).join('\n\n')
-  }
-
-  function copyText(text) {
-    navigator.clipboard.writeText(text).then(() => {
-      alert('¡Copiado!')
-    })
-  }
-
-  const firstImg = cart[0]?.image ? STORAGE_URL + cart[0].image : null
-
-  if (orderView) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.95)', zIndex: 50, overflowY: 'auto', padding: '20px' }}>
-        <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <button onClick={() => setOrderView(false)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '8px', padding: '8px 14px', fontSize: '13px' }}>← Volver</button>
-            <div style={{ fontWeight: 700, fontSize: '16px' }}>Resumen del pedido</div>
-          </div>
-
-          {/* First product image */}
-          {firstImg && (
-            <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', aspectRatio: '1', maxHeight: '300px' }}>
-              <img src={firstImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-          )}
-
-          {/* Order text — provider format */}
-          <div style={{ background: '#141414', border: '1px solid #2a0a0a', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', color: '#cc1a1a', fontWeight: 700, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Formato para proveedor</div>
-            <pre style={{ fontSize: '14px', color: '#e0e0e0', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.7 }}>{generateOrderText()}</pre>
-            <button onClick={() => copyText(generateOrderText())} style={{ marginTop: '12px', width: '100%', padding: '10px', borderRadius: '8px', background: '#cc1a1a', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700 }}>
-              📋 Copiar formato proveedor
-            </button>
-          </div>
-
-          {/* Summary */}
-          <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', color: '#888', fontWeight: 700, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Resumen del pedido</div>
-            <pre style={{ fontSize: '13px', color: '#ccc', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.7 }}>{generateSummary()}</pre>
-            <div style={{ borderTop: '1px solid #2a2a2a', marginTop: '12px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700 }}>
-              <span>Total</span>
-              <span style={{ color: '#cc1a1a' }}>${total.toLocaleString('es-CL')}</span>
-            </div>
-            <button onClick={() => copyText(generateSummary() + `\n\nTotal: $${total.toLocaleString('es-CL')}`)} style={{ marginTop: '12px', width: '100%', padding: '10px', borderRadius: '8px', background: '#1e1e1e', border: '1px solid #2a2a2a', color: '#ccc', fontSize: '13px', fontWeight: 600 }}>
-              📋 Copiar resumen
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const inp = { width: '100%', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', marginBottom: '10px' }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#0f0f0f', width: '100%', maxWidth: '420px', height: '100%', overflowY: 'auto', borderLeft: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }} onClick={step !== 'confirm' ? onClose : undefined}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0f0f0f', width: '100%', maxWidth: '430px', height: '100%', overflowY: 'auto', borderLeft: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column' }}>
+
         {/* Header */}
-        <div style={{ padding: '16px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '18px', fontWeight: 700 }}>🛒 Carrito <span style={{ fontSize: '13px', color: '#666', fontWeight: 400 }}>({cart.length} items)</span></div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', fontSize: '22px', lineHeight: 1 }}>×</button>
+        <div style={{ padding: '16px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ fontSize: '17px', fontWeight: 700 }}>
+            {step === 'cart' && <>🛒 Carrito <span style={{ fontSize: '13px', color: '#666', fontWeight: 400 }}>({cart.length} items)</span></>}
+            {step === 'form' && '📋 Datos del pedido'}
+            {step === 'confirm' && '✅ Pedido enviado'}
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', fontSize: '22px', cursor: 'pointer' }}>×</button>
         </div>
 
-        {cart.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#444', gap: '12px' }}>
-            <span style={{ fontSize: '48px' }}>🛒</span>
-            <span>El carrito está vacío</span>
-          </div>
-        ) : (
+        {/* STEP: Cart */}
+        {step === 'cart' && (
           <>
-            <div style={{ flex: 1 }}>
-              {cart.map(item => (
-                <div key={item.cartId} style={{ padding: '14px 16px', borderBottom: '1px solid #181818', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', background: '#1a0a0a', flexShrink: 0 }}>
-                    {item.image
-                      ? <img src={STORAGE_URL + item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>👕</div>
-                    }
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '3px' }}>{item.productName}</div>
-                    <div style={{ fontSize: '11px', color: '#888' }}>
-                      Talla: {item.size} · Versión: {item.version}
-                      {item.estName && ` · ${item.estName} #${item.estNum}`}
+            {cart.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#444', gap: '12px' }}>
+                <span style={{ fontSize: '48px' }}>🛒</span><span>El carrito está vacío</span>
+              </div>
+            ) : (
+              <>
+                <div style={{ flex: 1 }}>
+                  {cart.map(item => (
+                    <div key={item.cartId} style={{ padding: '12px 16px', borderBottom: '1px solid #181818', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', background: '#1a0a0a', flexShrink: 0 }}>
+                        {item.image ? <img src={STORAGE_URL + item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>👕</div>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '2px' }}>{item.productName}</div>
+                        <div style={{ fontSize: '11px', color: '#888' }}>Talla: {item.size} · {item.version === 'player' ? 'Player' : 'Fan'}</div>
+                        {item.estampado && <div style={{ fontSize: '11px', color: '#f59e0b' }}>✍️ {item.estName} #{item.estNum}</div>}
+                        <div style={{ fontSize: '11px', color: item.stockType === 'stock' ? '#4ade80' : '#f59e0b', marginTop: '2px', fontWeight: 600 }}>
+                          {item.stockType === 'stock' ? '● En stock' : '○ A pedido'}
+                        </div>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#cc1a1a', marginTop: '3px' }}>${item.total.toLocaleString('es-CL')}</div>
+                      </div>
+                      <button onClick={() => removeFromCart(item.cartId)} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
                     </div>
-                    <div style={{ fontSize: '12px', color: item.stockType === 'stock' ? '#4ade80' : '#f59e0b', marginTop: '3px', fontWeight: 600 }}>
-                      {item.stockType === 'stock' ? '● En stock' : '○ A pedido'}
-                    </div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#cc1a1a', marginTop: '4px' }}>${item.total.toLocaleString('es-CL')}</div>
-                  </div>
-                  <button onClick={() => removeFromCart(item.cartId)} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', flexShrink: 0 }}>✕</button>
+                  ))}
                 </div>
-              ))}
+                <div style={{ padding: '16px', borderTop: '1px solid #1e1e1e', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 700, marginBottom: '14px' }}>
+                    <span>Total</span><span style={{ color: '#cc1a1a' }}>${total.toLocaleString('es-CL')}</span>
+                  </div>
+                  <button onClick={() => setStep('form')} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#cc1a1a', border: 'none', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>
+                    Continuar con el pedido →
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* STEP: Form */}
+        {step === 'form' && (
+          <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+            <button onClick={() => setStep('cart')} style={{ background: 'none', border: 'none', color: '#cc1a1a', fontSize: '14px', cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '4px' }}>← Volver al carrito</button>
+
+            <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
+              <div style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>{cart.length} producto{cart.length!==1?'s':''} · Total: <span style={{ color: '#cc1a1a', fontWeight: 700 }}>${total.toLocaleString('es-CL')}</span></div>
+              {cart.map((item, i) => <div key={i} style={{ fontSize: '12px', color: '#ccc', padding: '3px 0', borderBottom: i < cart.length-1 ? '1px solid #1e1e1e' : 'none' }}>{item.productName} — {item.size} · {item.version}</div>)}
             </div>
 
-            <div style={{ padding: '16px', borderTop: '1px solid #1e1e1e' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 700, marginBottom: '14px' }}>
-                <span>Total</span>
-                <span style={{ color: '#cc1a1a' }}>${total.toLocaleString('es-CL')}</span>
-              </div>
-              <button onClick={() => setOrderView(true)} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#cc1a1a', border: 'none', color: '#fff', fontSize: '16px', fontWeight: 700 }}>
-                Ver pedido completo →
-              </button>
+            <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '14px' }}>Tus datos de contacto</div>
+
+            <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Nombre *</label>
+            <input style={inp} value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Tu nombre completo" />
+
+            <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>WhatsApp / Teléfono</label>
+            <input style={inp} value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+56 9 XXXX XXXX" type="tel" />
+
+            <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Correo electrónico</label>
+            <input style={inp} value={correo} onChange={e => setCorreo(e.target.value)} placeholder="tu@correo.com" type="email" />
+
+            <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Notas (opcional)</label>
+            <textarea style={{ ...inp, resize: 'vertical', minHeight: '70px', fontFamily: 'inherit' }} value={notas} onChange={e => setNotas(e.target.value)} placeholder="Alguna indicación adicional..." />
+
+            <div style={{ background: '#1a1400', border: '1px solid #854d0e', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px', fontSize: '12px', color: '#fbbf24' }}>
+              💬 Nos contactaremos contigo por WhatsApp o correo para coordinar el pago y la entrega.
             </div>
-          </>
+
+            <button onClick={submitOrder} disabled={saving} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#cc1a1a', border: 'none', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>
+              {saving ? 'Enviando...' : '✅ Confirmar pedido'}
+            </button>
+          </div>
+        )}
+
+        {/* STEP: Confirm */}
+        {step === 'confirm' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', textAlign: 'center' }}>
+            <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
+            <div style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>¡Pedido recibido!</div>
+            <div style={{ fontSize: '13px', color: '#888', marginBottom: '16px', lineHeight: 1.6 }}>
+              Tu pedido fue enviado correctamente.<br/>
+              Nos contactaremos contigo pronto para coordinar el pago y la entrega.
+            </div>
+            {orderId && <div style={{ background: '#1a0000', border: '1px solid #cc1a1a', borderRadius: '10px', padding: '10px 20px', marginBottom: '20px', fontFamily: 'monospace', fontSize: '16px', color: '#cc1a1a', fontWeight: 700 }}>#{orderId}</div>}
+            <button onClick={onClose} style={{ padding: '13px 28px', borderRadius: '10px', background: '#cc1a1a', border: 'none', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer' }}>
+              Volver a la tienda
+            </button>
+          </div>
         )}
       </div>
     </div>
