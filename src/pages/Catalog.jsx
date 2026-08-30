@@ -16,7 +16,7 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
   const [versionFilter, setVersionFilter] = useState('all')
   const [stockFilter, setStockFilter] = useState('all')
   const [activeTag, setActiveTag] = useState('')
-  const [sortBy, setSortBy] = useState('recent')
+  const [sortBy, setSortBy] = useState('name_asc')
   const [showFilters, setShowFilters] = useState(false)
 
   const allTags = useMemo(() => {
