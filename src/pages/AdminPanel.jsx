@@ -53,16 +53,39 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   async function uploadImages(files) {
     const uploaded = []
     for (const file of files) {
-      const ext = file.name.split('.').pop().toLowerCase()
+      const ext = (file.name || 'image.jpg').split('.').pop().toLowerCase().replace(/[^a-z]/g, '') || 'jpg'
       const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-      setUploadStatus(`Subiendo ${file.name}...`)
-      const { error } = await supabase.storage.from('Camisetas').upload(filename, file, { contentType: file.type })
+      setUploadStatus(`Subiendo imagen...`)
+      const { error } = await supabase.storage.from('Camisetas').upload(filename, file, { contentType: file.type || 'image/jpeg' })
       if (error) { setUploadStatus('Error: ' + error.message); continue }
       uploaded.push(filename)
     }
     setImages(prev => [...prev, ...uploaded])
     setUploadStatus(uploaded.length > 0 ? `✓ ${uploaded.length} foto(s) subida(s)` : '')
     setTimeout(() => setUploadStatus(''), 3000)
+  }
+
+  async function uploadBlob(blob) {
+    const filename = `paste_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
+    setUploadStatus('Subiendo imagen pegada...')
+    const { error } = await supabase.storage.from('Camisetas').upload(filename, blob, { contentType: 'image/jpeg' })
+    if (error) { setUploadStatus('Error: ' + error.message); return }
+    setImages(prev => [...prev, filename])
+    setUploadStatus('✓ Imagen subida')
+    setTimeout(() => setUploadStatus(''), 2000)
+  }
+
+  function handlePaste(e) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const blob = item.getAsFile()
+        if (blob) uploadBlob(blob)
+        break
+      }
+    }
   }
 
   async function saveProduct() {
@@ -266,9 +289,18 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
             </div>
           </div>
           <label style={lbl}>Fotos ({images.length} subidas)</label>
-          <label style={{ display: 'block', border: '2px dashed #2a2a2a', borderRadius: '10px', padding: '18px', textAlign: 'center', cursor: 'pointer', marginBottom: '8px', color: '#666', fontSize: '14px' }}>
+          <div
+            onPaste={handlePaste}
+            tabIndex={0}
+            style={{ border: '2px dashed #cc1a1a', borderRadius: '10px', padding: '14px', textAlign: 'center', marginBottom: '8px', color: '#aaa', fontSize: '13px', outline: 'none', background: '#1a0000', cursor: 'default' }}
+          >
+            <div style={{ fontSize: '20px', marginBottom: '4px' }}>📋</div>
+            <div style={{ fontWeight: 700, color: '#cc1a1a', marginBottom: '2px' }}>Pega aquí con Ctrl+V</div>
+            <div style={{ fontSize: '11px', color: '#555' }}>Copia la imagen en Yupoo (clic derecho → Copiar imagen) y pega aquí</div>
+          </div>
+          <label style={{ display: 'block', border: '2px dashed #2a2a2a', borderRadius: '10px', padding: '12px', textAlign: 'center', cursor: 'pointer', marginBottom: '8px', color: '#555', fontSize: '13px' }}>
             <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => uploadImages([...e.target.files])} />
-            📸 Agregar fotos (varias a la vez)
+            📁 O selecciona archivos desde tu computador
           </label>
           {uploadStatus && <div style={{ fontSize: '12px', color: uploadStatus.startsWith('Error')?'#cc1a1a':'#4ade80', marginBottom: '8px', padding: '6px 10px', background: '#1a1a1a', borderRadius: '6px' }}>{uploadStatus}</div>}
           {images.length > 0 && (
