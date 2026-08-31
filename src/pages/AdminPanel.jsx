@@ -51,6 +51,102 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
     }).join('\n\n')
   }
 
+  async function generateOrderImage(order) {
+    const wrap = document.getElementById('order-img-wrap')
+    wrap.innerHTML = '<div style="color:#888;font-size:12px;padding:8px">Generando imagen...</div>'
+
+    const canvas = document.getElementById('order-canvas')
+    const item = order.items[0]
+    const IMG_SIZE = 600
+    const TEXT_H = 200
+    canvas.width = IMG_SIZE
+    canvas.height = IMG_SIZE + TEXT_H
+    canvas.style.display = 'none'
+    const ctx = canvas.getContext('2d')
+
+    // Dark background
+    ctx.fillStyle = '#0f0f0f'
+    ctx.fillRect(0, 0, IMG_SIZE, IMG_SIZE + TEXT_H)
+
+    // Load product image
+    if (item.image) {
+      try {
+        await new Promise((resolve) => {
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.onload = () => { ctx.drawImage(img, 0, 0, IMG_SIZE, IMG_SIZE); resolve() }
+          img.onerror = resolve
+          img.src = STORAGE_URL + item.image
+        })
+      } catch(e) {}
+    }
+
+    // Gradient overlay at bottom of photo
+    const grad = ctx.createLinearGradient(0, IMG_SIZE - 80, 0, IMG_SIZE)
+    grad.addColorStop(0, 'rgba(15,15,15,0)')
+    grad.addColorStop(1, 'rgba(15,15,15,1)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, IMG_SIZE - 80, IMG_SIZE, 80)
+
+    // Red accent bar
+    ctx.fillStyle = '#cc1a1a'
+    ctx.fillRect(0, IMG_SIZE, IMG_SIZE, 4)
+
+    // Text section
+    const startY = IMG_SIZE + 16
+    ctx.textBaseline = 'top'
+
+    // Product name
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 18px system-ui, sans-serif'
+    const name = item.productName || ''
+    const maxW = IMG_SIZE - 32
+    // Wrap long names
+    const words = name.split(' ')
+    let line = '', lines = []
+    for (const w of words) {
+      const test = line + (line ? ' ' : '') + w
+      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w }
+      else line = test
+    }
+    if (line) lines.push(line)
+    lines.slice(0, 2).forEach((l, i) => ctx.fillText(l, 16, startY + i * 22))
+
+    const detailY = startY + (lines.length > 1 ? 48 : 26)
+
+    // Details row
+    ctx.font = '15px system-ui, sans-serif'
+    ctx.fillStyle = '#aaaaaa'
+    const details = `Talla: ${item.size}  ·  ${item.version === 'player' ? '⚡ Player' : 'Fan'}${item.estampado ? `  ·  ${item.estName} #${item.estNum}` : ''}`
+    ctx.fillText(details, 16, detailY)
+
+    // More items
+    if (order.items.length > 1) {
+      ctx.fillStyle = '#666666'
+      ctx.font = '13px system-ui, sans-serif'
+      ctx.fillText(`+ ${order.items.length - 1} producto(s) más`, 16, detailY + 22)
+    }
+
+    // Logo watermark
+    ctx.fillStyle = '#cc1a1a'
+    ctx.font = 'bold 13px system-ui, sans-serif'
+    ctx.fillText('La Loba Store', 16, IMG_SIZE + TEXT_H - 24)
+
+    // Convert to image and show download
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
+    wrap.innerHTML = ''
+    const img = document.createElement('img')
+    img.src = dataUrl
+    img.style.cssText = 'width:100%;border-radius:8px;margin-bottom:8px'
+    wrap.appendChild(img)
+    const a = document.createElement('a')
+    a.href = dataUrl
+    a.download = `pedido_${order.id.slice(0,8)}.jpg`
+    a.style.cssText = 'display:block;width:100%;padding:10px;border-radius:8px;background:#14532d;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none'
+    a.textContent = '⬇️ Descargar imagen para WhatsApp'
+    wrap.appendChild(a)
+  }
+
   async function uploadImages(files) {
     const uploaded = []
     for (const file of files) {
@@ -209,15 +305,22 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
             </div>
           </div>
 
-          {/* Provider text */}
+          {/* Provider section */}
           <div style={{ background: '#0a1400', border: '1px solid #166534', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
             <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px', color: '#4ade80' }}>📋 Formato para proveedor</div>
             <pre style={{ fontSize: '13px', color: '#e0e0e0', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.8, background: '#1a1a1a', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
               {generateProviderText(selectedOrder)}
             </pre>
-            <button onClick={() => { navigator.clipboard.writeText(generateProviderText(selectedOrder)); alert('¡Copiado!') }} style={{ width: '100%', padding: '11px', borderRadius: '8px', background: '#166534', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-              📋 Copiar texto para proveedor
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => { navigator.clipboard.writeText(generateProviderText(selectedOrder)); alert('¡Copiado!') }} style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#166534', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                📋 Copiar texto
+              </button>
+              <button onClick={() => generateOrderImage(selectedOrder)} style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#1a3a2a', border: '1px solid #166534', color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                🖼️ Generar imagen
+              </button>
+            </div>
+            <canvas id="order-canvas" style={{ display: 'none' }} />
+            <div id="order-img-wrap" style={{ marginTop: '10px' }} />
           </div>
 
           {/* Change status */}

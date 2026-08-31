@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import ProductCard from '../components/ProductCard'
 
 const TIPO_CATS = [
@@ -10,14 +10,23 @@ const TIPO_CATS = [
   { key: 'ropa', label: '👔 Ropa' },
 ]
 
-export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav }) {
-  const [search, setSearch] = useState('')
-  const [tipoCat, setTipoCat] = useState('all')
-  const [versionFilter, setVersionFilter] = useState('all')
-  const [stockFilter, setStockFilter] = useState('all')
-  const [activeTag, setActiveTag] = useState('')
-  const [sortBy, setSortBy] = useState('name_asc')
+export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav, savedState }) {
+  const [search, setSearch] = useState(savedState?.search || '')
+  const [tipoCat, setTipoCat] = useState(savedState?.tipoCat || 'all')
+  const [versionFilter, setVersionFilter] = useState(savedState?.versionFilter || 'all')
+  const [stockFilter, setStockFilter] = useState(savedState?.stockFilter || 'all')
+  const [activeTag, setActiveTag] = useState(savedState?.activeTag || '')
+  const [sortBy, setSortBy] = useState(savedState?.sortBy || 'name_asc')
   const [showFilters, setShowFilters] = useState(false)
+  const restored = useRef(false)
+
+  // Restore scroll once products load
+  useEffect(() => {
+    if (!loading && savedState?.scrollY && !restored.current) {
+      restored.current = true
+      setTimeout(() => window.scrollTo(0, savedState.scrollY), 80)
+    }
+  }, [loading, savedState])
 
   const allTags = useMemo(() => {
     const tags = new Set()
@@ -29,7 +38,8 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
     let result = products
     if (tipoCat !== 'all') result = result.filter(p => p.tipo_producto === tipoCat)
     if (versionFilter !== 'all') result = result.filter(p => p.version === versionFilter)
-    if (stockFilter !== 'all') result = result.filter(p => p.stock_estado === stockFilter)
+    if (stockFilter === 'stock') result = result.filter(p => p.tallas_stock?.length > 0)
+    if (stockFilter === 'pedido') result = result.filter(p => !p.tallas_stock?.length)
     if (activeTag) result = result.filter(p => p.categorias?.includes(activeTag))
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -42,8 +52,14 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
     if (sortBy === 'price_asc') result = [...result].sort((a, b) => a.precio - b.precio)
     if (sortBy === 'price_desc') result = [...result].sort((a, b) => b.precio - a.precio)
     if (sortBy === 'name_asc') result = [...result].sort((a, b) => a.nombre?.localeCompare(b.nombre))
+    if (sortBy === 'recent') result = [...result].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     return result
   }, [products, tipoCat, versionFilter, stockFilter, activeTag, search, sortBy])
+
+  // Save current filter state to parent before navigating
+  function handleSelect(p) {
+    onSelectProduct(p, { search, tipoCat, versionFilter, stockFilter, activeTag, sortBy, scrollY: window.scrollY })
+  }
 
   return (
     <div style={{ paddingTop: '20px' }}>
@@ -92,10 +108,10 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
             <div>
               <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Ordenar</div>
               <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: '#1e1e1e', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '6px 10px', color: '#ccc', fontSize: '12px', outline: 'none', cursor: 'pointer' }}>
+                <option value="name_asc">Nombre A→Z</option>
                 <option value="recent">Más recientes</option>
                 <option value="price_asc">Precio ↑</option>
                 <option value="price_desc">Precio ↓</option>
-                <option value="name_asc">Nombre A→Z</option>
               </select>
             </div>
           </div>
@@ -127,7 +143,7 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px' }}>
-          {filtered.map(p => <ProductCard key={p.id} product={p} onClick={() => onSelectProduct(p)} isFav={favorites.includes(p.id)} onToggleFav={onToggleFav} />)}
+          {filtered.map(p => <ProductCard key={p.id} product={p} onClick={() => handleSelect(p)} isFav={favorites.includes(p.id)} onToggleFav={onToggleFav} />)}
         </div>
       )}
     </div>

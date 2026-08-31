@@ -1,16 +1,16 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { supabase, STORAGE_URL } from '../lib/supabase'
 
-const XL_SIZES = ['XL', 'XXL', 'XXXL']
-
 export default function Cart({ cart, removeFromCart, onClose, config, clearCart }) {
-  const [step, setStep] = useState('cart') // cart | form | confirm
+  const [step, setStep] = useState('cart')
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [correo, setCorreo] = useState('')
   const [notas, setNotas] = useState('')
   const [saving, setSaving] = useState(false)
   const [orderId, setOrderId] = useState(null)
+  const [generatingImg, setGeneratingImg] = useState(false)
+  const canvasRef = useRef(null)
 
   const total = cart.reduce((a, b) => a + b.total, 0)
 
@@ -19,25 +19,13 @@ export default function Cart({ cart, removeFromCart, onClose, config, clearCart 
     if (!telefono.trim() && !correo.trim()) return alert('Ingresa al menos teléfono o correo')
     setSaving(true)
     const items = cart.map(item => ({
-      productId: item.productId,
-      productName: item.productName,
-      image: item.image,
-      size: item.size,
-      version: item.version,
-      estampado: item.estampado,
-      estName: item.estName,
-      estNum: item.estNum,
-      stockType: item.stockType,
-      unitPrice: item.unitPrice,
-      total: item.total,
+      productId: item.productId, productName: item.productName, image: item.image,
+      size: item.size, version: item.version, estampado: item.estampado,
+      estName: item.estName, estNum: item.estNum, stockType: item.stockType, total: item.total,
     }))
     const { data, error } = await supabase.from('pedidos').insert({
-      cliente_nombre: nombre.trim(),
-      cliente_telefono: telefono.trim(),
-      cliente_correo: correo.trim(),
-      items,
-      notas: notas.trim(),
-      estado: 'pendiente'
+      cliente_nombre: nombre.trim(), cliente_telefono: telefono.trim(),
+      cliente_correo: correo.trim(), items, notas: notas.trim(), estado: 'pendiente'
     }).select('id').single()
     setSaving(false)
     if (error) { alert('Error al enviar pedido: ' + error.message); return }
@@ -52,7 +40,6 @@ export default function Cart({ cart, removeFromCart, onClose, config, clearCart 
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }} onClick={step !== 'confirm' ? onClose : undefined}>
       <div onClick={e => e.stopPropagation()} style={{ background: '#0f0f0f', width: '100%', maxWidth: '430px', height: '100%', overflowY: 'auto', borderLeft: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Header */}
         <div style={{ padding: '16px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div style={{ fontSize: '17px', fontWeight: 700 }}>
             {step === 'cart' && <>🛒 Carrito <span style={{ fontSize: '13px', color: '#666', fontWeight: 400 }}>({cart.length} items)</span></>}
@@ -62,7 +49,6 @@ export default function Cart({ cart, removeFromCart, onClose, config, clearCart 
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', fontSize: '22px', cursor: 'pointer' }}>×</button>
         </div>
 
-        {/* STEP: Cart */}
         {step === 'cart' && (
           <>
             {cart.length === 0 ? (
@@ -81,9 +67,6 @@ export default function Cart({ cart, removeFromCart, onClose, config, clearCart 
                         <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '2px' }}>{item.productName}</div>
                         <div style={{ fontSize: '11px', color: '#888' }}>Talla: {item.size} · {item.version === 'player' ? 'Player' : 'Fan'}</div>
                         {item.estampado && <div style={{ fontSize: '11px', color: '#f59e0b' }}>✍️ {item.estName} #{item.estNum}</div>}
-                        <div style={{ fontSize: '11px', color: item.stockType === 'stock' ? '#4ade80' : '#f59e0b', marginTop: '2px', fontWeight: 600 }}>
-                          {item.stockType === 'stock' ? '● En stock' : '○ A pedido'}
-                        </div>
                         <div style={{ fontSize: '15px', fontWeight: 700, color: '#cc1a1a', marginTop: '3px' }}>${item.total.toLocaleString('es-CL')}</div>
                       </div>
                       <button onClick={() => removeFromCart(item.cartId)} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#666', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
@@ -103,48 +86,37 @@ export default function Cart({ cart, removeFromCart, onClose, config, clearCart 
           </>
         )}
 
-        {/* STEP: Form */}
         {step === 'form' && (
           <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
-            <button onClick={() => setStep('cart')} style={{ background: 'none', border: 'none', color: '#cc1a1a', fontSize: '14px', cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '4px' }}>← Volver al carrito</button>
-
+            <button onClick={() => setStep('cart')} style={{ background: 'none', border: 'none', color: '#cc1a1a', fontSize: '14px', cursor: 'pointer', marginBottom: '16px' }}>← Volver al carrito</button>
             <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
               <div style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>{cart.length} producto{cart.length!==1?'s':''} · Total: <span style={{ color: '#cc1a1a', fontWeight: 700 }}>${total.toLocaleString('es-CL')}</span></div>
               {cart.map((item, i) => <div key={i} style={{ fontSize: '12px', color: '#ccc', padding: '3px 0', borderBottom: i < cart.length-1 ? '1px solid #1e1e1e' : 'none' }}>{item.productName} — {item.size} · {item.version}</div>)}
             </div>
-
             <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '14px' }}>Tus datos de contacto</div>
-
             <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Nombre *</label>
             <input style={inp} value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Tu nombre completo" />
-
             <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>WhatsApp / Teléfono</label>
             <input style={inp} value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+56 9 XXXX XXXX" type="tel" />
-
             <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Correo electrónico</label>
             <input style={inp} value={correo} onChange={e => setCorreo(e.target.value)} placeholder="tu@correo.com" type="email" />
-
             <label style={{ fontSize: '12px', color: '#888', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Notas (opcional)</label>
             <textarea style={{ ...inp, resize: 'vertical', minHeight: '70px', fontFamily: 'inherit' }} value={notas} onChange={e => setNotas(e.target.value)} placeholder="Alguna indicación adicional..." />
-
             <div style={{ background: '#1a1400', border: '1px solid #854d0e', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px', fontSize: '12px', color: '#fbbf24' }}>
               💬 Nos contactaremos contigo por WhatsApp o correo para coordinar el pago y la entrega.
             </div>
-
             <button onClick={submitOrder} disabled={saving} style={{ width: '100%', padding: '15px', borderRadius: '12px', background: '#cc1a1a', border: 'none', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: 'pointer' }}>
               {saving ? 'Enviando...' : '✅ Confirmar pedido'}
             </button>
           </div>
         )}
 
-        {/* STEP: Confirm */}
         {step === 'confirm' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', textAlign: 'center' }}>
             <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
             <div style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>¡Pedido recibido!</div>
             <div style={{ fontSize: '13px', color: '#888', marginBottom: '16px', lineHeight: 1.6 }}>
-              Tu pedido fue enviado correctamente.<br/>
-              Nos contactaremos contigo pronto para coordinar el pago y la entrega.
+              Tu pedido fue enviado correctamente.<br/>Nos contactaremos contigo pronto.
             </div>
             {orderId && <div style={{ background: '#1a0000', border: '1px solid #cc1a1a', borderRadius: '10px', padding: '10px 20px', marginBottom: '20px', fontFamily: 'monospace', fontSize: '16px', color: '#cc1a1a', fontWeight: 700 }}>#{orderId}</div>}
             <button onClick={onClose} style={{ padding: '13px 28px', borderRadius: '10px', background: '#cc1a1a', border: 'none', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer' }}>

@@ -16,6 +16,7 @@ export default function App() {
   const [page, setPage] = useState('catalog')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [productHistory, setProductHistory] = useState([])
+  const [catalogState, setCatalogState] = useState(null) // preserves filters + scroll
   const [showCart, setShowCart] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
@@ -64,6 +65,8 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
+
+
   function goBack() {
     if (productHistory.length > 0) {
       const prev = productHistory[productHistory.length - 1]
@@ -73,6 +76,10 @@ export default function App() {
     } else {
       setPage('catalog')
       setSelectedProduct(null)
+      // Restore scroll position after render
+      setTimeout(() => {
+        if (catalogState?.scrollY) window.scrollTo(0, catalogState.scrollY)
+      }, 50)
     }
   }
 
@@ -110,7 +117,7 @@ export default function App() {
       />
 
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px 100px' }}>
-        {page === 'catalog' && <Catalog products={products} loading={loading} onSelectProduct={p => openProduct(p)} favorites={favorites} onToggleFav={toggleFav} config={config} />}
+        {page === 'catalog' && <Catalog products={products} loading={loading} onSelectProduct={(p, state) => { setCatalogState(state); openProduct(p) }} favorites={favorites} onToggleFav={toggleFav} config={config} savedState={catalogState} />}
         {page === 'product' && selectedProduct && <ProductPage product={selectedProduct} products={products} config={config} onAddToCart={addToCart} onSelectProduct={p => openProduct(p, true)} onBack={goBack} favorites={favorites} onToggleFav={toggleFav} />}
         {page === 'info' && <InfoPage config={config} />}
         {page === 'favorites' && <FavoritesPage products={favProducts} onSelectProduct={p => openProduct(p)} favorites={favorites} onToggleFav={toggleFav} />}
