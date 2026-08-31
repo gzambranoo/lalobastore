@@ -37,6 +37,7 @@ export default function ProductCard({ product, onClick, isFav, onToggleFav }) {
         <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: '2px' }}>{product.nombre}</div>
         <div style={{ fontSize: '11px', color: '#555', marginBottom: '6px' }}>{product.color}</div>
         <div style={{ fontSize: '17px', fontWeight: 800, color: '#cc1a1a' }}>${product.precio?.toLocaleString('es-CL')}</div>
+
       </div>
     </div>
   )

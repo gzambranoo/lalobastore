@@ -4,11 +4,12 @@ import { supabase, STORAGE_URL } from '../lib/supabase'
 const TIPOS = ['camiseta', 'short', 'cortavientos', 'entrenamiento', 'ropa']
 const VERSIONS = ['fan', 'player']
 const STOCK_ESTADOS = ['pedido', 'stock']
+const TALLAS = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 const ESTADOS_PEDIDO = ['pendiente', 'en proceso', 'listo', 'entregado', 'cancelado']
 const ESTADO_COLORS = { pendiente: '#f59e0b', 'en proceso': '#3b82f6', listo: '#22c55e', entregado: '#888', cancelado: '#ef4444' }
 
 function defaultForm() {
-  return { nombre: '', color: '', precio: '', tipo_producto: 'camiseta', version: 'fan', categorias: '', region: 'europa', retro: false, destacada: false, stock_estado: 'pedido', camiseta_vinculada: '' }
+  return { nombre: '', color: '', precio: '', tipo_producto: 'camiseta', version: 'fan', categorias: '', region: 'europa', retro: false, destacada: false, camiseta_vinculada: '', tallas_stock: [] }
 }
 
 export default function AdminPanel({ products, config, setConfig, reloadProducts }) {
@@ -96,8 +97,10 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       tipo_producto: form.tipo_producto, version: form.version,
       categorias: form.categorias.split(',').map(c => c.trim()).filter(Boolean),
       region: form.region, retro: form.retro, destacada: form.destacada,
-      stock_estado: form.stock_estado, imagenes: images,
+      stock_estado: form.tallas_stock.length > 0 ? 'stock' : 'pedido',
+      imagenes: images,
       camiseta_vinculada: form.camiseta_vinculada || null,
+      tallas_stock: form.tallas_stock,
     }
     if (editId) await supabase.from('camisetas').update(payload).eq('id', editId)
     else await supabase.from('camisetas').insert(payload)
@@ -113,7 +116,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   }
 
   function startEdit(p) {
-    setForm({ nombre: p.nombre, color: p.color||'', precio: p.precio?.toString()||'', tipo_producto: p.tipo_producto||'camiseta', version: p.version||'fan', categorias: (p.categorias||[]).join(', '), region: p.region||'europa', retro: p.retro||false, destacada: p.destacada||false, stock_estado: p.stock_estado||'pedido', camiseta_vinculada: p.camiseta_vinculada||'' })
+    setForm({ nombre: p.nombre, color: p.color||'', precio: p.precio?.toString()||'', tipo_producto: p.tipo_producto||'camiseta', version: p.version||'fan', categorias: (p.categorias||[]).join(', '), region: p.region||'europa', retro: p.retro||false, destacada: p.destacada||false, camiseta_vinculada: p.camiseta_vinculada||'', tallas_stock: p.tallas_stock||[] })
     setImages(p.imagenes||[])
     setEditId(p.id)
     setView('add')
