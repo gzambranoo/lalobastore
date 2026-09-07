@@ -10,17 +10,23 @@ const TIPO_CATS = [
   { key: 'ropa', label: '👔 Ropa' },
 ]
 
+const LIGAS_EUROPA = ['Premier League','La Liga','Serie A','Bundesliga','Ligue 1','Champions']
+const LIGAS_SUD = ['Liga Chilena','Liga Argentina','Brasileirao']
+
 export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav, savedState }) {
   const [search, setSearch] = useState(savedState?.search || '')
   const [tipoCat, setTipoCat] = useState(savedState?.tipoCat || 'all')
-  const [versionFilter, setVersionFilter] = useState(savedState?.versionFilter || 'all')
-  const [stockFilter, setStockFilter] = useState(savedState?.stockFilter || 'all')
-  const [activeTag, setActiveTag] = useState(savedState?.activeTag || '')
+  const [version, setVersion] = useState(savedState?.version || 'all')
+  const [stock, setStock] = useState(savedState?.stock || 'all')
+  const [retro, setRetro] = useState(savedState?.retro || false)
+  const [clubSel, setClubSel] = useState(savedState?.clubSel || '') // 'club' | 'seleccion' | ''
+  const [liga, setLiga] = useState(savedState?.liga || '')
+  const [regionSel, setRegionSel] = useState(savedState?.regionSel || '')
+  const [equipo, setEquipo] = useState(savedState?.equipo || '')
   const [sortBy, setSortBy] = useState(savedState?.sortBy || 'name_asc')
   const [showFilters, setShowFilters] = useState(false)
   const restored = useRef(false)
 
-  // Restore scroll once products load
   useEffect(() => {
     if (!loading && savedState?.scrollY && !restored.current) {
       restored.current = true
@@ -28,19 +34,45 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
     }
   }, [loading, savedState])
 
-  const allTags = useMemo(() => {
-    const tags = new Set()
-    products.forEach(p => p.categorias?.forEach(c => tags.add(c)))
-    return [...tags].sort()
-  }, [products])
+  // Get available teams for selected liga
+  const equiposDisponibles = useMemo(() => {
+    if (!liga) return []
+    const teams = new Set()
+    products.forEach(p => {
+      if (p.categorias?.includes(liga)) {
+        p.categorias.forEach(c => {
+          if (!LIGAS_EUROPA.includes(c) && !LIGAS_SUD.includes(c) && c !== 'Club' && c !== 'Selección' && c !== 'Retro') {
+            teams.add(c)
+          }
+        })
+      }
+    })
+    return [...teams].sort()
+  }, [products, liga])
+
+  // Reset child filters when parent changes
+  function setClubSelReset(val) { setClubSel(val); setLiga(''); setRegionSel(''); setEquipo('') }
+  function setLigaReset(val) { setLiga(val); setEquipo('') }
 
   const filtered = useMemo(() => {
     let result = products
+
     if (tipoCat !== 'all') result = result.filter(p => p.tipo_producto === tipoCat)
-    if (versionFilter !== 'all') result = result.filter(p => p.version === versionFilter)
-    if (stockFilter === 'stock') result = result.filter(p => p.tallas_stock?.length > 0)
-    if (stockFilter === 'pedido') result = result.filter(p => !p.tallas_stock?.length)
-    if (activeTag) result = result.filter(p => p.categorias?.includes(activeTag))
+    if (version !== 'all') result = result.filter(p => p.version === version)
+    if (stock === 'stock') result = result.filter(p => p.tallas_stock?.length > 0)
+    if (stock === 'pedido') result = result.filter(p => !p.tallas_stock?.length)
+    if (retro) result = result.filter(p => p.retro)
+
+    if (clubSel === 'club') {
+      result = result.filter(p => p.categorias?.includes('Club'))
+      if (liga) result = result.filter(p => p.categorias?.includes(liga))
+      if (equipo) result = result.filter(p => p.categorias?.includes(equipo))
+    }
+    if (clubSel === 'seleccion') {
+      result = result.filter(p => p.categorias?.includes('Selección'))
+      if (regionSel) result = result.filter(p => p.region === regionSel)
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase()
       result = result.filter(p =>
@@ -49,17 +81,26 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
         p.categorias?.some(c => c.toLowerCase().includes(q))
       )
     }
-    if (sortBy === 'price_asc') result = [...result].sort((a, b) => a.precio - b.precio)
-    if (sortBy === 'price_desc') result = [...result].sort((a, b) => b.precio - a.precio)
-    if (sortBy === 'name_asc') result = [...result].sort((a, b) => a.nombre?.localeCompare(b.nombre))
-    if (sortBy === 'recent') result = [...result].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    return result
-  }, [products, tipoCat, versionFilter, stockFilter, activeTag, search, sortBy])
 
-  // Save current filter state to parent before navigating
+    if (sortBy === 'price_asc') result = [...result].sort((a, b) => a.precio - b.precio)
+    else if (sortBy === 'price_desc') result = [...result].sort((a, b) => b.precio - a.precio)
+    else if (sortBy === 'name_asc') result = [...result].sort((a, b) => a.nombre?.localeCompare(b.nombre))
+    else if (sortBy === 'recent') result = [...result].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    return result
+  }, [products, tipoCat, version, stock, retro, clubSel, liga, equipo, regionSel, search, sortBy])
+
   function handleSelect(p) {
-    onSelectProduct(p, { search, tipoCat, versionFilter, stockFilter, activeTag, sortBy, scrollY: window.scrollY })
+    onSelectProduct(p, { search, tipoCat, version, stock, retro, clubSel, liga, equipo, regionSel, sortBy, scrollY: window.scrollY })
   }
+
+  const hasFilters = tipoCat !== 'all' || version !== 'all' || stock !== 'all' || retro || clubSel || liga || equipo || regionSel || search
+  const pill = (label, active, onClick, extra = {}) => (
+    <button onClick={onClick} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', border: `1px solid ${active ? '#cc1a1a' : '#2a2a2a'}`, background: active ? '#cc1a1a' : '#141414', color: active ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', ...extra }}>
+      {label}
+    </button>
+  )
+  const sectionTitle = (t) => <div style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '12px 0 6px' }}>{t}</div>
 
   return (
     <div style={{ paddingTop: '20px' }}>
@@ -71,42 +112,42 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
             style={{ background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', flex: 1 }} />
           {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: '#555', fontSize: '18px', cursor: 'pointer' }}>×</button>}
         </div>
-        <button onClick={() => setShowFilters(!showFilters)} style={{ background: showFilters ? '#cc1a1a' : '#141414', border: `1px solid ${showFilters ? '#cc1a1a' : '#1e1e1e'}`, color: showFilters ? '#fff' : '#888', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-          ⚙ Filtros
+        <button onClick={() => setShowFilters(!showFilters)} style={{ background: showFilters || hasFilters ? '#cc1a1a' : '#141414', border: `1px solid ${showFilters || hasFilters ? '#cc1a1a' : '#1e1e1e'}`, color: '#fff', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', position: 'relative' }}>
+          ⚙ Filtros {hasFilters && <span style={{ background: 'rgba(255,255,255,.3)', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>ON</span>}
         </button>
       </div>
 
       {/* Category tabs */}
       <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px' }}>
-        {TIPO_CATS.map(cat => (
-          <button key={cat.key} onClick={() => setTipoCat(cat.key)} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: '20px', border: `1px solid ${tipoCat === cat.key ? '#cc1a1a' : '#2a2a2a'}`, background: tipoCat === cat.key ? '#cc1a1a' : '#141414', color: tipoCat === cat.key ? '#fff' : '#888', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            {cat.label}
-          </button>
-        ))}
+        {TIPO_CATS.map(cat => pill(cat.label, tipoCat === cat.key, () => setTipoCat(cat.key)))}
       </div>
 
-      {/* Expanded filters */}
+      {/* Filter panel */}
       {showFilters && (
         <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
+
+          {/* Row 1: Version + Stock + Retro + Sort */}
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Versión</div>
+              {sectionTitle('Versión')}
               <div style={{ display: 'flex', gap: '5px' }}>
-                {[['all','Todas'],['fan','Fan'],['player','Player']].map(([v,l]) => (
-                  <button key={v} onClick={() => setVersionFilter(v)} style={{ padding: '5px 12px', borderRadius: '8px', border: `1px solid ${versionFilter===v?'#cc1a1a':'#2a2a2a'}`, background: versionFilter===v?'#cc1a1a':'#1e1e1e', color: versionFilter===v?'#fff':'#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>{l}</button>
-                ))}
+                {[['all','Todas'],['fan','Fan'],['player','Player']].map(([v,l]) => pill(l, version===v, () => setVersion(v)))}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Disponibilidad</div>
+              {sectionTitle('Disponibilidad')}
               <div style={{ display: 'flex', gap: '5px' }}>
-                {[['all','Todo'],['stock','En stock'],['pedido','A pedido']].map(([v,l]) => (
-                  <button key={v} onClick={() => setStockFilter(v)} style={{ padding: '5px 12px', borderRadius: '8px', border: `1px solid ${stockFilter===v?'#cc1a1a':'#2a2a2a'}`, background: stockFilter===v?'#cc1a1a':'#1e1e1e', color: stockFilter===v?'#fff':'#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>{l}</button>
-                ))}
+                {[['all','Todo'],['stock','En stock'],['pedido','A pedido']].map(([v,l]) => pill(l, stock===v, () => setStock(v)))}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Ordenar</div>
+              {sectionTitle('Retro')}
+              <button onClick={() => setRetro(!retro)} style={{ padding: '6px 14px', borderRadius: '20px', border: `1px solid ${retro ? '#f59e0b' : '#2a2a2a'}`, background: retro ? '#2a1500' : '#141414', color: retro ? '#f59e0b' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                🕰️ {retro ? 'Solo retro' : 'Retro'}
+              </button>
+            </div>
+            <div style={{ marginLeft: 'auto' }}>
+              {sectionTitle('Ordenar')}
               <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: '#1e1e1e', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '6px 10px', color: '#ccc', fontSize: '12px', outline: 'none', cursor: 'pointer' }}>
                 <option value="name_asc">Nombre A→Z</option>
                 <option value="recent">Más recientes</option>
@@ -115,21 +156,72 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
               </select>
             </div>
           </div>
-          {allTags.length > 0 && (
-            <div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Etiquetas</div>
-              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                <button onClick={() => setActiveTag('')} style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${!activeTag?'#cc1a1a':'#2a2a2a'}`, background: !activeTag?'#cc1a1a':'#1e1e1e', color: !activeTag?'#fff':'#888', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>Todas</button>
-                {allTags.map(tag => (
-                  <button key={tag} onClick={() => setActiveTag(tag===activeTag?'':tag)} style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${activeTag===tag?'#cc1a1a':'#2a2a2a'}`, background: activeTag===tag?'#cc1a1a':'#1e1e1e', color: activeTag===tag?'#fff':'#888', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>{tag}</button>
-                ))}
+
+          {/* Divider */}
+          <div style={{ borderTop: '1px solid #1e1e1e', margin: '14px 0' }} />
+
+          {/* Club / Selección */}
+          {sectionTitle('Categoría')}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+            {pill('Todos', !clubSel, () => setClubSelReset(''))}
+            {pill('⚽ Clubes', clubSel==='club', () => setClubSelReset('club'))}
+            {pill('🌍 Selecciones', clubSel==='seleccion', () => setClubSelReset('seleccion'))}
+          </div>
+
+          {/* Clubes — ligas */}
+          {clubSel === 'club' && (
+            <>
+              {sectionTitle('Liga')}
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                {pill('Todas', !liga, () => setLigaReset(''))}
+                {sectionTitle('Europa')}
+                {LIGAS_EUROPA.map(l => pill(l, liga===l, () => setLigaReset(l)))}
+                {sectionTitle('Sudamérica')}
+                {LIGAS_SUD.map(l => pill(l, liga===l, () => setLigaReset(l)))}
               </div>
+
+              {/* Equipo — solo si hay liga */}
+              {liga && equiposDisponibles.length > 0 && (
+                <>
+                  {sectionTitle('Equipo')}
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                    {pill('Todos', !equipo, () => setEquipo(''))}
+                    {equiposDisponibles.map(e => pill(e, equipo===e, () => setEquipo(equipo===e?'':e)))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Selecciones — región */}
+          {clubSel === 'seleccion' && (
+            <>
+              {sectionTitle('Región')}
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                {pill('Todas', !regionSel, () => setRegionSel(''))}
+                {pill('Europa', regionSel==='europa', () => setRegionSel(regionSel==='europa'?'':'europa'))}
+                {pill('Sudamérica', regionSel==='sudamerica', () => setRegionSel(regionSel==='sudamerica'?'':'sudamerica'))}
+                {pill('Resto del mundo', regionSel==='mundo', () => setRegionSel(regionSel==='mundo'?'':'mundo'))}
+              </div>
+            </>
+          )}
+
+          {/* Clear filters */}
+          {hasFilters && (
+            <div style={{ marginTop: '14px', borderTop: '1px solid #1e1e1e', paddingTop: '12px' }}>
+              <button onClick={() => { setTipoCat('all'); setVersion('all'); setStock('all'); setRetro(false); setClubSelReset(''); setSearch(''); setSortBy('name_asc') }}
+                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid #2a2a2a', background: 'none', color: '#888', fontSize: '12px', cursor: 'pointer' }}>
+                ✕ Limpiar filtros
+              </button>
             </div>
           )}
         </div>
       )}
 
-      <div style={{ fontSize: '12px', color: '#555', marginBottom: '14px' }}>{filtered.length} producto{filtered.length!==1?'s':''}</div>
+      <div style={{ fontSize: '12px', color: '#555', marginBottom: '14px' }}>
+        {filtered.length} producto{filtered.length!==1?'s':''}
+        {hasFilters && <span style={{ color: '#cc1a1a', marginLeft: '6px' }}>· filtrado</span>}
+      </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#444' }}>
@@ -140,6 +232,7 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
         <div style={{ textAlign: 'center', padding: '60px', color: '#444' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
           <div>Sin resultados</div>
+          {hasFilters && <button onClick={() => { setTipoCat('all'); setVersion('all'); setStock('all'); setRetro(false); setClubSelReset(''); setSearch('') }} style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '8px', border: '1px solid #cc1a1a', background: 'none', color: '#cc1a1a', fontSize: '13px', cursor: 'pointer' }}>Limpiar filtros</button>}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px' }}>
