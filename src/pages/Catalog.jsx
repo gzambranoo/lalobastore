@@ -10,7 +10,7 @@ const TIPO_CATS = [
   { key: 'ropa', label: '👔 Ropa' },
 ]
 
-const LIGAS_EUROPA = ['Premier League','La Liga','Serie A','Bundesliga','Ligue 1','Champions']
+const LIGAS_EUROPA = ['Premier League','La Liga','LaLiga','Serie A','Bundesliga','Ligue 1','Champions']
 const LIGAS_SUD = ['Liga Chilena','Liga Argentina','Brasileirao']
 
 export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav, savedState }) {
@@ -35,15 +35,20 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
   }, [loading, savedState])
 
   // Get available teams for selected liga
+  // Normalize liga name for matching (handle LaLiga vs La Liga)
+  const normalizeLiga = (l) => l.replace(/\s/g,'').toLowerCase()
+  
+  const META_TAGS = new Set(['Club','Selección','Seleccion','Retro','Premier League','La Liga','LaLiga','Serie A','Bundesliga','Ligue 1','Champions','Liga Chilena','Liga Argentina','Brasileirao','Europa','Sudamérica','Sudamerica','Mundo'])
+
   const equiposDisponibles = useMemo(() => {
     if (!liga) return []
     const teams = new Set()
+    const ligaNorm = normalizeLiga(liga)
     products.forEach(p => {
-      if (p.categorias?.includes(liga)) {
-        p.categorias.forEach(c => {
-          if (!LIGAS_EUROPA.includes(c) && !LIGAS_SUD.includes(c) && c !== 'Club' && c !== 'Selección' && c !== 'Retro') {
-            teams.add(c)
-          }
+      const matchesLiga = p.categorias?.some(cat => normalizeLiga(cat) === ligaNorm)
+      if (matchesLiga) {
+        p.categorias.forEach(cat => {
+          if (!META_TAGS.has(cat)) teams.add(cat)
         })
       }
     })
@@ -53,6 +58,20 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
   // Reset child filters when parent changes
   function setClubSelReset(val) { setClubSel(val); setLiga(''); setRegionSel(''); setEquipo('') }
   function setLigaReset(val) { setLiga(val); setEquipo('') }
+
+  // Countries available for selecciones (filtered by region if selected)
+  const paisesDisponibles = useMemo(() => {
+    const paises = new Set()
+    products.forEach(p => {
+      const isSel = p.categorias?.includes('Selección') || p.categorias?.includes('Seleccion')
+      if (!isSel) return
+      if (regionSel && p.region !== regionSel) return
+      p.categorias.forEach(cat => {
+        if (!META_TAGS.has(cat)) paises.add(cat)
+      })
+    })
+    return [...paises].sort()
+  }, [products, regionSel])
 
   const filtered = useMemo(() => {
     let result = products
@@ -65,12 +84,13 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
 
     if (clubSel === 'club') {
       result = result.filter(p => p.categorias?.includes('Club'))
-      if (liga) result = result.filter(p => p.categorias?.includes(liga))
+      if (liga) result = result.filter(p => p.categorias?.some(cat => normalizeLiga(cat) === normalizeLiga(liga)))
       if (equipo) result = result.filter(p => p.categorias?.includes(equipo))
     }
     if (clubSel === 'seleccion') {
-      result = result.filter(p => p.categorias?.includes('Selección'))
+      result = result.filter(p => p.categorias?.includes('Selección') || p.categorias?.includes('Seleccion'))
       if (regionSel) result = result.filter(p => p.region === regionSel)
+      if (equipo) result = result.filter(p => p.categorias?.includes(equipo))
     }
 
     if (search.trim()) {
@@ -175,7 +195,7 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px' }}>
                 {pill('Todas', !liga, () => setLigaReset(''))}
                 {sectionTitle('Europa')}
-                {LIGAS_EUROPA.map(l => pill(l, liga===l, () => setLigaReset(l)))}
+                {LIGAS_EUROPA.filter((l,i,a) => normalizeLiga(l) !== normalizeLiga(a[i-1]||'')).map(l => pill(l === 'LaLiga' ? 'La Liga' : l, normalizeLiga(liga)===normalizeLiga(l), () => setLigaReset(l)))}
                 {sectionTitle('Sudamérica')}
                 {LIGAS_SUD.map(l => pill(l, liga===l, () => setLigaReset(l)))}
               </div>
@@ -193,16 +213,25 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
             </>
           )}
 
-          {/* Selecciones — región */}
+          {/* Selecciones — región + país */}
           {clubSel === 'seleccion' && (
             <>
               {sectionTitle('Región')}
-              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {pill('Todas', !regionSel, () => setRegionSel(''))}
-                {pill('Europa', regionSel==='europa', () => setRegionSel(regionSel==='europa'?'':'europa'))}
-                {pill('Sudamérica', regionSel==='sudamerica', () => setRegionSel(regionSel==='sudamerica'?'':'sudamerica'))}
-                {pill('Resto del mundo', regionSel==='mundo', () => setRegionSel(regionSel==='mundo'?'':'mundo'))}
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                {pill('Todas', !regionSel, () => { setRegionSel(''); setEquipo('') })}
+                {pill('Europa', regionSel==='europa', () => { setRegionSel(regionSel==='europa'?'':'europa'); setEquipo('') })}
+                {pill('Sudamérica', regionSel==='sudamerica', () => { setRegionSel(regionSel==='sudamerica'?'':'sudamerica'); setEquipo('') })}
+                {pill('Resto del mundo', regionSel==='mundo', () => { setRegionSel(regionSel==='mundo'?'':'mundo'); setEquipo('') })}
               </div>
+              {paisesDisponibles.length > 0 && (
+                <>
+                  {sectionTitle('País')}
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                    {pill('Todos', !equipo, () => setEquipo(''))}
+                    {paisesDisponibles.map(p => pill(p, equipo===p, () => setEquipo(equipo===p?'':p)))}
+                  </div>
+                </>
+              )}
             </>
           )}
 

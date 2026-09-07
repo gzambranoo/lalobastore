@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase, STORAGE_URL } from '../lib/supabase'
 
 const TIPOS = ['camiseta', 'short', 'cortavientos', 'entrenamiento', 'ropa']
@@ -22,6 +22,12 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   const [orders, setOrders] = useState([])
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  // Admin product list filters
+  const [adminSearch, setAdminSearch] = useState('')
+  const [adminStock, setAdminStock] = useState('all')
+  const [adminCat, setAdminCat] = useState('')
+  // Stock editor
+  const [editingStock, setEditingStock] = useState(null) // product id being stock-edited
 
   const inp = (extra={}) => ({ width: '100%', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', marginBottom: '10px', ...extra })
   const lbl = { fontSize: '12px', color: '#888', marginBottom: '4px', display: 'block', fontWeight: 600 }
@@ -224,6 +230,29 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   }
 
   const pendingOrders = orders.filter(o => o.estado === 'pendiente').length
+
+  // Filtered products for admin list
+  const adminFiltered = useMemo ? products : products // fallback
+  const getAdminFiltered = () => {
+    let r = products
+    if (adminSearch.trim()) {
+      const q = adminSearch.toLowerCase()
+      r = r.filter(p => p.nombre?.toLowerCase().includes(q) || p.categorias?.some(c => c.toLowerCase().includes(q)))
+    }
+    if (adminStock === 'stock') r = r.filter(p => p.tallas_stock?.length > 0)
+    if (adminStock === 'pedido') r = r.filter(p => !p.tallas_stock?.length)
+    if (adminCat) r = r.filter(p => p.categorias?.includes(adminCat))
+    return r
+  }
+
+  async function saveStockOnly(productId, tallasStock) {
+    await supabase.from('camisetas').update({
+      tallas_stock: tallasStock,
+      stock_estado: tallasStock.length > 0 ? 'stock' : 'pedido'
+    }).eq('id', productId)
+    setEditingStock(null)
+    reloadProducts()
+  }
 
   return (
     <div style={{ paddingTop: '20px', maxWidth: '900px', margin: '0 auto' }}>
