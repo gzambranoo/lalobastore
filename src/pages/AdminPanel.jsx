@@ -59,6 +59,9 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   const [editingStockProduct, setEditingStockProduct] = useState(null)
   const [adminSearch, setAdminSearch] = useState('')
   const [adminStock, setAdminStock] = useState('all')
+  const [galeria, setGaleria] = useState([])
+  const [galeriaDesc, setGaleriaDesc] = useState('')
+  const [galeriaUploading, setGaleriaUploading] = useState(false)
 
   const inp = (extra = {}) => ({ width: '100%', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', marginBottom: '10px', ...extra })
   const lbl = { fontSize: '12px', color: '#888', marginBottom: '4px', display: 'block', fontWeight: 600 }
@@ -69,13 +72,52 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
     </button>
   )
 
-  useEffect(() => { if (view === 'orders') loadOrders() }, [view])
+  useEffect(() => {
+    if (view === 'orders') loadOrders()
+    if (view === 'galeria') loadGaleria()
+  }, [view])
 
   async function loadOrders() {
     setLoadingOrders(true)
     const { data } = await supabase.from('pedidos').select('*').order('created_at', { ascending: false })
     if (data) setOrders(data)
     setLoadingOrders(false)
+  }
+
+  async function loadGaleria() {
+    const { data } = await supabase.from('galeria').select('*').order('created_at', { ascending: false })
+    if (data) setGaleria(data)
+  }
+
+  async function uploadGaleriaImage(file) {
+    setGaleriaUploading(true)
+    const ext = (file.name || 'img.jpg').split('.').pop().replace(/[^a-z]/g, '') || 'jpg'
+    const filename = `galeria_${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('Camisetas').upload(filename, file, { contentType: file.type || 'image/jpeg' })
+    if (error) { alert('Error: ' + error.message); setGaleriaUploading(false); return }
+    await supabase.from('galeria').insert({ imagen: filename, descripcion: galeriaDesc.trim() || null })
+    setGaleriaDesc('')
+    setGaleriaUploading(false)
+    loadGaleria()
+  }
+
+  async function deleteGaleriaFoto(id) {
+    if (!confirm('¿Eliminar esta foto?')) return
+    await supabase.from('galeria').delete().eq('id', id)
+    loadGaleria()
+  }
+
+  async function pasteGaleriaImage(e) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const blob = item.getAsFile()
+        if (blob) await uploadGaleriaImage(blob)
+        break
+      }
+    }
   }
 
   async function updateOrderStatus(id, estado) {
@@ -262,6 +304,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
         </button>
         {navBtn('list', `📋 Productos (${products.length})`)}
         {navBtn('add', '➕ Agregar')}
+        {navBtn('galeria', '📸 Galería')}
         {navBtn('config', '⚙️ Config')}
       </div>
 
@@ -539,6 +582,51 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
               Cancelar
             </button>
           </div>
+        </div>
+      )}
+
+      {/* GALERIA */}
+      {view === 'galeria' && (
+        <div style={{ maxWidth: '700px' }}>
+          <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>📸 Galería — fotos reales</div>
+
+          {/* Upload */}
+          <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#888', marginBottom: '10px' }}>Agregar foto</div>
+            <input value={galeriaDesc} onChange={e => setGaleriaDesc(e.target.value)} placeholder="Descripción (opcional, ej: Barcelona Local 26/27)"
+              style={{ width: '100%', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px', outline: 'none', marginBottom: '10px' }} />
+            <div onPaste={pasteGaleriaImage} tabIndex={0}
+              style={{ border: '2px dashed #cc1a1a', borderRadius: '10px', padding: '14px', textAlign: 'center', marginBottom: '8px', color: '#aaa', fontSize: '13px', outline: 'none', background: '#1a0000' }}>
+              <div style={{ fontSize: '20px', marginBottom: '4px' }}>📋</div>
+              <div style={{ fontWeight: 700, color: '#cc1a1a', marginBottom: '2px' }}>Pega aquí con Ctrl+V</div>
+              <div style={{ fontSize: '11px', color: '#555' }}>Copia la imagen y pégala aquí</div>
+            </div>
+            <label style={{ display: 'block', border: '2px dashed #2a2a2a', borderRadius: '10px', padding: '10px', textAlign: 'center', cursor: 'pointer', color: '#555', fontSize: '13px' }}>
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && uploadGaleriaImage(e.target.files[0])} />
+              {galeriaUploading ? '⏳ Subiendo...' : '📁 O selecciona un archivo'}
+            </label>
+          </div>
+
+          {/* Grid */}
+          {galeria.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
+              <div style={{ fontSize: '40px', marginBottom: '10px' }}>📷</div>
+              <div>No hay fotos aún</div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
+              {galeria.map(foto => (
+                <div key={foto.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '1px solid #1e1e1e' }}>
+                  <img src={STORAGE_URL + foto.imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {foto.descripcion && (
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,.7)', fontSize: '9px', color: '#ccc', padding: '4px 6px' }}>{foto.descripcion}</div>
+                  )}
+                  <button onClick={() => deleteGaleriaFoto(foto.id)}
+                    style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(204,26,26,.85)', border: 'none', borderRadius: '50%', width: '22px', height: '22px', color: '#fff', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

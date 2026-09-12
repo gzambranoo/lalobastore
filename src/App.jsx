@@ -8,6 +8,7 @@ import InfoPage from './pages/InfoPage'
 import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import FavoritesPage from './pages/FavoritesPage'
+import GaleriaPage from './pages/GaleriaPage'
 
 export default function App() {
   const [products, setProducts] = useState([])
@@ -121,6 +122,7 @@ export default function App() {
         {page === 'product' && selectedProduct && <ProductPage product={selectedProduct} products={products} config={config} onAddToCart={addToCart} onSelectProduct={p => openProduct(p, true)} onBack={goBack} favorites={favorites} onToggleFav={toggleFav} />}
         {page === 'info' && <InfoPage config={config} />}
         {page === 'favorites' && <FavoritesPage products={favProducts} onSelectProduct={p => openProduct(p)} favorites={favorites} onToggleFav={toggleFav} />}
+        {page === 'galeria' && <GaleriaPage />}
         {page === 'admin' && isAdmin && <AdminPanel products={products} config={config} setConfig={setConfig} reloadProducts={loadProducts} />}
       </main>
 

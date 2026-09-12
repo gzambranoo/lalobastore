@@ -1,3 +1,7 @@
+const WA_NUMBER = '56982633425'
+const WA_MSG = encodeURIComponent('Hola, tengo una consulta sobre La Loba Store')
+const WA_URL = `https://wa.me/${WA_NUMBER}?text=${WA_MSG}`
+
 export default function InfoPage({ config }) {
   const prices = [
     { label: 'Camiseta Fan', price: 20000 },
@@ -14,6 +18,19 @@ export default function InfoPage({ config }) {
     <div style={{ paddingTop: '24px', maxWidth: '700px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '6px' }}>Información y precios</h1>
       <p style={{ color: '#666', fontSize: '14px', marginBottom: '28px' }}>Todo lo que necesitas saber antes de hacer tu pedido</p>
+
+      {/* WhatsApp */}
+      <a href={WA_URL} target="_blank" rel="noopener noreferrer"
+        style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#0a1f0a', border: '1px solid #166534', borderRadius: '14px', padding: '18px 20px', marginBottom: '16px', textDecoration: 'none', cursor: 'pointer' }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = '#22c55e'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = '#166534'}>
+        <div style={{ width: '46px', height: '46px', borderRadius: '50%', background: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>💬</div>
+        <div>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: '#4ade80', marginBottom: '2px' }}>Escríbenos por WhatsApp</div>
+          <div style={{ fontSize: '13px', color: '#888' }}>Consultas, dudas o coordinación de pedidos</div>
+        </div>
+        <div style={{ marginLeft: 'auto', fontSize: '20px', color: '#4ade80' }}>→</div>
+      </a>
 
       {/* Prices */}
       <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
@@ -43,7 +60,7 @@ export default function InfoPage({ config }) {
         </div>
       </div>
 
-      {/* Delivery time */}
+      {/* Delivery */}
       <div style={{ background: '#1a1400', border: '1px solid #854d0e', borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>📦 Tiempo de entrega</div>
         <div style={{ fontSize: '28px', fontWeight: 900, color: '#f59e0b', marginBottom: '6px' }}>14 — 20 días</div>
@@ -52,12 +69,12 @@ export default function InfoPage({ config }) {
         </div>
       </div>
 
-      {/* Availability notice */}
+      {/* Availability */}
       <div style={{ background: '#1a0a0a', border: '1px solid #7f1d1d', borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px' }}>⚠️ Disponibilidad</div>
         <div style={{ fontSize: '14px', color: '#ccc', lineHeight: 1.7 }}>
-          Todos los pedidos están <strong style={{ color: '#fff' }}>sujetos a confirmación de disponibilidad</strong> del artículo al momento de realizarse el encargo. 
-          En caso de no estar disponible, te avisaremos a la brevedad para buscar una alternativa o realizar el reembolso correspondiente.
+          Todos los pedidos están <strong style={{ color: '#fff' }}>sujetos a confirmación de disponibilidad</strong> del artículo al momento de realizarse el encargo.
+          En caso de no estar disponible, te avisaremos a la brevedad para buscar una alternativa o realizar el reembolso.
         </div>
       </div>
 
@@ -95,8 +112,8 @@ export default function InfoPage({ config }) {
         </div>
       </div>
 
-      {/* Stock vs order */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+      {/* Stock vs pedido */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <div style={{ background: '#0a1a0a', border: '1px solid #16a34a', borderRadius: '14px', padding: '18px' }}>
           <div style={{ fontSize: '15px', fontWeight: 700, color: '#4ade80', marginBottom: '8px' }}>● En stock</div>
           <div style={{ fontSize: '13px', color: '#888', lineHeight: 1.6 }}>Disponible inmediatamente. Se coordina entrega o despacho.</div>
@@ -104,14 +121,6 @@ export default function InfoPage({ config }) {
         <div style={{ background: '#1a1400', border: '1px solid #f59e0b', borderRadius: '14px', padding: '18px' }}>
           <div style={{ fontSize: '15px', fontWeight: 700, color: '#f59e0b', marginBottom: '8px' }}>○ A pedido</div>
           <div style={{ fontSize: '13px', color: '#888', lineHeight: 1.6 }}>Se encarga especialmente. Tiempo estimado: 14-20 días.</div>
-        </div>
-      </div>
-
-      {/* Contact */}
-      <div style={{ background: '#1a0000', border: '1px solid #2a0a0a', borderRadius: '14px', padding: '20px' }}>
-        <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>📲 Contacto</div>
-        <div style={{ fontSize: '14px', color: '#888', lineHeight: 1.7 }}>
-          Para coordinar pago y despacho, nos pondremos en contacto contigo una vez recibido tu pedido.
         </div>
       </div>
     </div>
