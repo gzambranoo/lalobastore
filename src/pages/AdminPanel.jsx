@@ -7,29 +7,24 @@ const TALLAS = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 const ESTADOS_PEDIDO = ['pendiente', 'en proceso', 'listo', 'entregado', 'cancelado']
 const ESTADO_COLORS = { pendiente: '#f59e0b', 'en proceso': '#3b82f6', listo: '#22c55e', entregado: '#888', cancelado: '#ef4444' }
 
+const AUTO_PRICES = {
+  camiseta: { fan: { corta: 19990, larga: 24990 }, player: { corta: 27990, larga: 34990 } },
+  short:    { fan: { corta: 13990, larga: 13990 }, player: { corta: 17990, larga: 17990 } },
+  cortavientos: { fan: { corta: 44990, larga: 44990 }, player: { corta: 44990, larga: 44990 } },
+}
+
 function getAutoPrice(tipo, version, manga) {
-  if (tipo === 'camiseta') {
-    if (version === 'fan') return manga === 'larga' ? '24990' : '19990'
-    if (version === 'player') return manga === 'larga' ? '34990' : '27990'
-  }
-  if (tipo === 'short') {
-    if (version === 'fan') return '13990'
-    if (version === 'player') return '17990'
-  }
-  if (tipo === 'cortavientos') return '44990'
-  return ''
+  return AUTO_PRICES[tipo]?.[version]?.[manga || 'corta'] || ''
 }
 
 function defaultForm() {
   return {
     nombre: '', color: '', precio: '19990', tipo_producto: 'camiseta',
     version: 'fan', manga: 'corta', categorias: '', region: 'europa',
-    retro: false, destacada: false,
-    camiseta_vinculada: '', tallas_stock: []
+    retro: false, destacada: false, camiseta_vinculada: '', tallas_stock: []
   }
 }
 
-// Stock editor — separate component so hooks work correctly
 function StockEditor({ product, onSave, onCancel }) {
   const [tallas, setTallas] = useState(product.tallas_stock || [])
   const toggle = (t) => setTallas(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
@@ -72,65 +67,26 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   const [editingStockProduct, setEditingStockProduct] = useState(null)
   const [adminSearch, setAdminSearch] = useState('')
   const [adminStock, setAdminStock] = useState('all')
-  const [galeria, setGaleria] = useState([])
-  const [galeriaDesc, setGaleriaDesc] = useState('')
-  const [galeriaUploading, setGaleriaUploading] = useState(false)
 
   const inp = (extra = {}) => ({ width: '100%', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', marginBottom: '10px', ...extra })
   const lbl = { fontSize: '12px', color: '#888', marginBottom: '4px', display: 'block', fontWeight: 600 }
-  const navBtn = (v, label) => (
-    <button onClick={() => { setView(v); setForm(defaultForm()); setImages([]); setEditId(null) }}
-      style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${view === v ? '#cc1a1a' : '#2a2a2a'}`, background: view === v ? '#cc1a1a' : '#1a1a1a', color: view === v ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-      {label}
-    </button>
-  )
 
-  useEffect(() => {
-    if (view === 'orders') loadOrders()
-    if (view === 'galeria') loadGaleria()
-  }, [view])
+  function navBtn(v, label) {
+    return (
+      <button onClick={() => { setView(v); if (v !== 'add') { setForm(defaultForm()); setImages([]); setEditId(null) } }}
+        style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${view === v ? '#cc1a1a' : '#2a2a2a'}`, background: view === v ? '#cc1a1a' : '#1a1a1a', color: view === v ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+        {label}
+      </button>
+    )
+  }
+
+  useEffect(() => { if (view === 'orders') loadOrders() }, [view])
 
   async function loadOrders() {
     setLoadingOrders(true)
     const { data } = await supabase.from('pedidos').select('*').order('created_at', { ascending: false })
     if (data) setOrders(data)
     setLoadingOrders(false)
-  }
-
-  async function loadGaleria() {
-    const { data } = await supabase.from('galeria').select('*').order('created_at', { ascending: false })
-    if (data) setGaleria(data)
-  }
-
-  async function uploadGaleriaImage(file) {
-    setGaleriaUploading(true)
-    const ext = (file.name || 'img.jpg').split('.').pop().replace(/[^a-z]/g, '') || 'jpg'
-    const filename = `galeria_${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('Camisetas').upload(filename, file, { contentType: file.type || 'image/jpeg' })
-    if (error) { alert('Error: ' + error.message); setGaleriaUploading(false); return }
-    await supabase.from('galeria').insert({ imagen: filename, descripcion: galeriaDesc.trim() || null })
-    setGaleriaDesc('')
-    setGaleriaUploading(false)
-    loadGaleria()
-  }
-
-  async function deleteGaleriaFoto(id) {
-    if (!confirm('¿Eliminar esta foto?')) return
-    await supabase.from('galeria').delete().eq('id', id)
-    loadGaleria()
-  }
-
-  async function pasteGaleriaImage(e) {
-    const items = e.clipboardData?.items
-    if (!items) return
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault()
-        const blob = item.getAsFile()
-        if (blob) await uploadGaleriaImage(blob)
-        break
-      }
-    }
   }
 
   async function updateOrderStatus(id, estado) {
@@ -157,8 +113,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
     const W = 600, TH = 200
     canvas.width = W; canvas.height = W + TH
     const ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#0f0f0f'
-    ctx.fillRect(0, 0, W, W + TH)
+    ctx.fillStyle = '#0f0f0f'; ctx.fillRect(0, 0, W, W + TH)
     if (item.image) {
       await new Promise(resolve => {
         const img = new Image(); img.crossOrigin = 'anonymous'
@@ -171,8 +126,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
     grad.addColorStop(0, 'rgba(15,15,15,0)'); grad.addColorStop(1, 'rgba(15,15,15,1)')
     ctx.fillStyle = grad; ctx.fillRect(0, W - 80, W, 80)
     ctx.fillStyle = '#cc1a1a'; ctx.fillRect(0, W, W, 4)
-    ctx.textBaseline = 'top'
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'
+    ctx.textBaseline = 'top'; ctx.fillStyle = '#fff'; ctx.font = 'bold 18px system-ui'
     const words = (item.productName || '').split(' ')
     let line = '', lines = []
     for (const w of words) {
@@ -202,7 +156,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
     for (const file of files) {
       const ext = (file.name || 'img.jpg').split('.').pop().replace(/[^a-z]/g, '') || 'jpg'
       const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-      setUploadStatus(`Subiendo imagen...`)
+      setUploadStatus('Subiendo imagen...')
       const { error } = await supabase.storage.from('Camisetas').upload(filename, file, { contentType: file.type || 'image/jpeg' })
       if (error) { setUploadStatus('Error: ' + error.message); continue }
       uploaded.push(filename)
@@ -275,8 +229,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
     const manga = p.nombre?.toLowerCase().includes(' ml') || p.nombre?.toLowerCase().includes('manga larga') ? 'larga' : 'corta'
     setForm({
       nombre: p.nombre, color: p.color || '', precio: p.precio?.toString() || '',
-      tipo_producto: p.tipo_producto || 'camiseta', version: p.version || 'fan',
-      manga,
+      tipo_producto: p.tipo_producto || 'camiseta', version: p.version || 'fan', manga,
       categorias: (p.categorias || []).join(', '), region: p.region || 'europa',
       retro: p.retro || false, destacada: p.destacada || false,
       camiseta_vinculada: p.camiseta_vinculada || '', tallas_stock: p.tallas_stock || []
@@ -295,7 +248,16 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
     alert('✓ Configuración guardada')
   }
 
-  // Filtered product list for admin
+  // Update price when tipo/version/manga changes
+  function updateFormWithPrice(updates) {
+    setForm(f => {
+      const next = { ...f, ...updates }
+      const auto = getAutoPrice(next.tipo_producto, next.version, next.manga)
+      if (auto) next.precio = String(auto)
+      return next
+    })
+  }
+
   const adminFiltered = useMemo(() => {
     let r = [...products]
     if (adminSearch.trim()) {
@@ -319,7 +281,6 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
         </button>
         {navBtn('list', `📋 Productos (${products.length})`)}
         {navBtn('add', '➕ Agregar')}
-        {navBtn('galeria', '📸 Galería')}
         {navBtn('config', '⚙️ Config')}
       </div>
 
@@ -368,8 +329,6 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
             </div>
             {selectedOrder.notas && <div style={{ background: '#1e1e1e', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#ccc' }}>📝 {selectedOrder.notas}</div>}
           </div>
-
-          {/* Products */}
           <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
             <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>Productos del pedido</div>
             {selectedOrder.items?.map((item, i) => (
@@ -390,28 +349,18 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
               <span style={{ color: '#cc1a1a' }}>${selectedOrder.items?.reduce((a, b) => a + (b.total || 0), 0).toLocaleString('es-CL')}</span>
             </div>
           </div>
-
-          {/* Provider text + image */}
           <div style={{ background: '#0a1400', border: '1px solid #166534', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
             <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px', color: '#4ade80' }}>📋 Formato para proveedor</div>
-            <pre style={{ fontSize: '13px', color: '#e0e0e0', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.8, background: '#1a1a1a', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
-              {generateProviderText(selectedOrder)}
-            </pre>
+            <pre style={{ fontSize: '13px', color: '#e0e0e0', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.8, background: '#1a1a1a', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>{generateProviderText(selectedOrder)}</pre>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => { navigator.clipboard.writeText(generateProviderText(selectedOrder)); alert('¡Copiado!') }}
-                style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#166534', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                📋 Copiar texto
-              </button>
+                style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#166534', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>📋 Copiar texto</button>
               <button onClick={() => generateOrderImage(selectedOrder)}
-                style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#1a3a2a', border: '1px solid #166534', color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                🖼️ Generar imagen
-              </button>
+                style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#1a3a2a', border: '1px solid #166534', color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>🖼️ Generar imagen</button>
             </div>
             <canvas id="order-canvas" style={{ display: 'none' }} />
             <div id="order-img-wrap" style={{ marginTop: '10px' }} />
           </div>
-
-          {/* Status */}
           <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '18px' }}>
             <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px' }}>Estado del pedido</div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -429,7 +378,6 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       {/* PRODUCT LIST */}
       {view === 'list' && (
         <div>
-          {/* Filters */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', background: '#141414', border: '1px solid #1e1e1e', borderRadius: '8px', padding: '8px 12px', gap: '6px' }}>
               <span style={{ color: '#444' }}>🔍</span>
@@ -447,16 +395,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
             </div>
           </div>
           <div style={{ fontSize: '11px', color: '#555', marginBottom: '10px' }}>{adminFiltered.length} de {products.length} productos</div>
-
-          {/* Stock editor */}
-          {editingStockProduct && (
-            <StockEditor
-              product={editingStockProduct}
-              onSave={saveStockOnly}
-              onCancel={() => setEditingStockProduct(null)}
-            />
-          )}
-
+          {editingStockProduct && <StockEditor product={editingStockProduct} onSave={saveStockOnly} onCancel={() => setEditingStockProduct(null)} />}
           {adminFiltered.map(p => (
             <div key={p.id} style={{ background: '#141414', border: `1px solid ${editingStockProduct?.id === p.id ? '#22c55e' : '#1e1e1e'}`, borderRadius: '12px', padding: '12px 14px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center' }}>
               <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', background: '#1a1a1a', flexShrink: 0 }}>
@@ -476,11 +415,8 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#cc1a1a' }}>${p.precio?.toLocaleString('es-CL')}</div>
               </div>
               <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
-                <button onClick={() => setEditingStockProduct(editingStockProduct?.id === p.id ? null : p)}
-                  title="Editar stock"
-                  style={{ background: p.tallas_stock?.length > 0 ? '#0a1a0a' : '#1a1a1a', border: `1px solid ${p.tallas_stock?.length > 0 ? '#22c55e' : '#2a2a2a'}`, color: p.tallas_stock?.length > 0 ? '#4ade80' : '#888', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>
-                  📦
-                </button>
+                <button onClick={() => setEditingStockProduct(editingStockProduct?.id === p.id ? null : p)} title="Editar stock"
+                  style={{ background: p.tallas_stock?.length > 0 ? '#0a1a0a' : '#1a1a1a', border: `1px solid ${p.tallas_stock?.length > 0 ? '#22c55e' : '#2a2a2a'}`, color: p.tallas_stock?.length > 0 ? '#4ade80' : '#888', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>📦</button>
                 <button onClick={() => startEdit(p)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>✏️</button>
                 <button onClick={() => deleteProduct(p.id)} style={{ background: '#1a0000', border: '1px solid #2a0a0a', color: '#cc1a1a', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>🗑️</button>
               </div>
@@ -493,54 +429,54 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       {view === 'add' && (
         <div style={{ maxWidth: '600px' }}>
           <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>{editId ? '✏️ Editar producto' : '➕ Nuevo producto'}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-            <div style={{ gridColumn: '1/-1' }}>
-              <label style={lbl}>Nombre *</label>
-              <input style={inp()} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Liverpool Local 26/27" />
-            </div>
-            <div>
-              <label style={lbl}>Precio (CLP) *</label>
-              <input style={inp()} type="number" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} />
-              {getAutoPrice(form.tipo_producto, form.version, form.manga) && (
-                <div style={{ fontSize: '10px', color: '#555', marginTop: '-8px', marginBottom: '8px' }}>
-                  Precio sugerido: <button type="button" onClick={() => setForm(f => ({ ...f, precio: getAutoPrice(f.tipo_producto, f.version, f.manga) }))}
-                    style={{ background: 'none', border: 'none', color: '#cc1a1a', fontSize: '10px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
-                    ${parseInt(getAutoPrice(form.tipo_producto, form.version, form.manga)).toLocaleString('es-CL')}
-                  </button>
-                </div>
-              )}
-            </div>
-            <div><label style={lbl}>Color</label><input style={inp()} value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} /></div>
+          <label style={lbl}>Nombre *</label>
+          <input style={inp()} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Liverpool Local 26/27" />
+
+          {/* Tipo + Versión + Manga en fila */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
             <div>
               <label style={lbl}>Tipo</label>
-              <select style={inp()} value={form.tipo_producto} onChange={e => {
-                const tipo = e.target.value
-                setForm(f => ({ ...f, tipo_producto: tipo, precio: getAutoPrice(tipo, f.version, f.manga) }))
-              }}>
+              <select style={inp()} value={form.tipo_producto} onChange={e => updateFormWithPrice({ tipo_producto: e.target.value })}>
                 {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
               <label style={lbl}>Versión</label>
-              <select style={inp()} value={form.version} onChange={e => {
-                const version = e.target.value
-                setForm(f => ({ ...f, version, precio: getAutoPrice(f.tipo_producto, version, f.manga) }))
-              }}>
+              <select style={inp()} value={form.version} onChange={e => updateFormWithPrice({ version: e.target.value })}>
                 {VERSIONS.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
             {form.tipo_producto === 'camiseta' && (
               <div>
                 <label style={lbl}>Manga</label>
-                <select style={inp()} value={form.manga || 'corta'} onChange={e => {
-                  const manga = e.target.value
-                  setForm(f => ({ ...f, manga, precio: getAutoPrice(f.tipo_producto, f.version, manga) }))
-                }}>
-                  <option value="corta">Manga corta</option>
-                  <option value="larga">Manga larga</option>
+                <select style={inp()} value={form.manga || 'corta'} onChange={e => updateFormWithPrice({ manga: e.target.value })}>
+                  <option value="corta">Corta</option>
+                  <option value="larga">Larga</option>
                 </select>
               </div>
             )}
+          </div>
+
+          {/* Precio con indicador auto */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={lbl}>
+                Precio (CLP) *
+                {getAutoPrice(form.tipo_producto, form.version, form.manga) && (
+                  <span style={{ fontWeight: 400, color: '#4ade80', marginLeft: '6px' }}>
+                    → ${parseInt(getAutoPrice(form.tipo_producto, form.version, form.manga)).toLocaleString('es-CL')} (auto)
+                  </span>
+                )}
+              </label>
+              <input style={inp()} type="number" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} />
+            </div>
+            <div>
+              <label style={lbl}>Color</label>
+              <input style={inp()} value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={lbl}>Región</label>
               <select style={inp()} value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))}>
@@ -549,7 +485,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
                 <option value="mundo">Resto del mundo</option>
               </select>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingTop: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingTop: '20px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', fontSize: '13px', color: '#ccc', margin: 0 }}>
                 <input type="checkbox" checked={form.retro} onChange={e => setForm(f => ({ ...f, retro: e.target.checked }))} style={{ accentColor: '#f59e0b', width: 'auto', margin: 0 }} />
                 Retro 🕰️
@@ -559,39 +495,36 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
                 Destacada ⭐
               </label>
             </div>
-            <div style={{ gridColumn: '1/-1' }}>
-              <label style={lbl}>Categorías (separadas por coma)</label>
-              <input style={inp()} value={form.categorias} onChange={e => setForm(f => ({ ...f, categorias: e.target.value }))} placeholder="Club, Premier League, Liverpool" />
-            </div>
-            <div style={{ gridColumn: '1/-1' }}>
-              <label style={lbl}>Vincular con versión contraria</label>
-              <select style={inp()} value={form.camiseta_vinculada} onChange={e => setForm(f => ({ ...f, camiseta_vinculada: e.target.value }))}>
-                <option value="">Sin vincular</option>
-                {products.filter(p => p.id !== editId).map(p => <option key={p.id} value={p.id}>{p.nombre} ({p.version})</option>)}
-              </select>
-            </div>
-            <div style={{ gridColumn: '1/-1' }}>
-              <label style={lbl}>Tallas en stock <span style={{ fontWeight: 400, color: '#555' }}>(el resto igual se puede pedir)</span></label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                {TALLAS.map(t => {
-                  const sel = form.tallas_stock.includes(t)
-                  return (
-                    <button key={t} type="button"
-                      onClick={() => setForm(f => ({ ...f, tallas_stock: sel ? f.tallas_stock.filter(x => x !== t) : [...f.tallas_stock, t] }))}
-                      style={{ padding: '9px 16px', borderRadius: '8px', border: `2px solid ${sel ? '#22c55e' : '#2a2a2a'}`, background: sel ? '#14532d' : '#1a1a1a', color: sel ? '#4ade80' : '#888', fontSize: '14px', fontWeight: sel ? 700 : 400, cursor: 'pointer' }}>
-                      {t}
-                    </button>
-                  )
-                })}
-              </div>
-              {form.tallas_stock.length > 0
-                ? <div style={{ fontSize: '11px', color: '#4ade80' }}>● Stock: {form.tallas_stock.join(' · ')}</div>
-                : <div style={{ fontSize: '11px', color: '#666' }}>○ Sin stock — todo a pedido</div>}
-            </div>
           </div>
 
+          <label style={lbl}>Categorías (separadas por coma)</label>
+          <input style={inp()} value={form.categorias} onChange={e => setForm(f => ({ ...f, categorias: e.target.value }))} placeholder="Club, Premier League, Liverpool" />
+
+          <label style={lbl}>Vincular con versión contraria</label>
+          <select style={inp()} value={form.camiseta_vinculada} onChange={e => setForm(f => ({ ...f, camiseta_vinculada: e.target.value }))}>
+            <option value="">Sin vincular</option>
+            {products.filter(p => p.id !== editId).map(p => <option key={p.id} value={p.id}>{p.nombre} ({p.version})</option>)}
+          </select>
+
+          <label style={lbl}>Tallas en stock <span style={{ fontWeight: 400, color: '#555' }}>(el resto igual se puede pedir)</span></label>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            {TALLAS.map(t => {
+              const sel = form.tallas_stock.includes(t)
+              return (
+                <button key={t} type="button"
+                  onClick={() => setForm(f => ({ ...f, tallas_stock: sel ? f.tallas_stock.filter(x => x !== t) : [...f.tallas_stock, t] }))}
+                  style={{ padding: '9px 16px', borderRadius: '8px', border: `2px solid ${sel ? '#22c55e' : '#2a2a2a'}`, background: sel ? '#14532d' : '#1a1a1a', color: sel ? '#4ade80' : '#888', fontSize: '14px', fontWeight: sel ? 700 : 400, cursor: 'pointer' }}>
+                  {t}
+                </button>
+              )
+            })}
+          </div>
+          {form.tallas_stock.length > 0
+            ? <div style={{ fontSize: '11px', color: '#4ade80', marginBottom: '14px' }}>● Stock: {form.tallas_stock.join(' · ')}</div>
+            : <div style={{ fontSize: '11px', color: '#666', marginBottom: '14px' }}>○ Sin stock — todo a pedido</div>}
+
           {/* Images */}
-          <label style={{ ...lbl, marginTop: '8px' }}>Fotos ({images.length} subidas)</label>
+          <label style={lbl}>Fotos ({images.length} subidas)</label>
           <div onPaste={handlePaste} tabIndex={0}
             style={{ border: '2px dashed #cc1a1a', borderRadius: '10px', padding: '14px', textAlign: 'center', marginBottom: '8px', color: '#aaa', fontSize: '13px', outline: 'none', background: '#1a0000', cursor: 'default' }}>
             <div style={{ fontSize: '20px', marginBottom: '4px' }}>📋</div>
@@ -629,56 +562,11 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
         </div>
       )}
 
-      {/* GALERIA */}
-      {view === 'galeria' && (
-        <div style={{ maxWidth: '700px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>📸 Galería — fotos reales</div>
-
-          {/* Upload */}
-          <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#888', marginBottom: '10px' }}>Agregar foto</div>
-            <input value={galeriaDesc} onChange={e => setGaleriaDesc(e.target.value)} placeholder="Descripción (opcional, ej: Barcelona Local 26/27)"
-              style={{ width: '100%', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '9px 12px', color: '#fff', fontSize: '13px', outline: 'none', marginBottom: '10px' }} />
-            <div onPaste={pasteGaleriaImage} tabIndex={0}
-              style={{ border: '2px dashed #cc1a1a', borderRadius: '10px', padding: '14px', textAlign: 'center', marginBottom: '8px', color: '#aaa', fontSize: '13px', outline: 'none', background: '#1a0000' }}>
-              <div style={{ fontSize: '20px', marginBottom: '4px' }}>📋</div>
-              <div style={{ fontWeight: 700, color: '#cc1a1a', marginBottom: '2px' }}>Pega aquí con Ctrl+V</div>
-              <div style={{ fontSize: '11px', color: '#555' }}>Copia la imagen y pégala aquí</div>
-            </div>
-            <label style={{ display: 'block', border: '2px dashed #2a2a2a', borderRadius: '10px', padding: '10px', textAlign: 'center', cursor: 'pointer', color: '#555', fontSize: '13px' }}>
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && uploadGaleriaImage(e.target.files[0])} />
-              {galeriaUploading ? '⏳ Subiendo...' : '📁 O selecciona un archivo'}
-            </label>
-          </div>
-
-          {/* Grid */}
-          {galeria.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
-              <div style={{ fontSize: '40px', marginBottom: '10px' }}>📷</div>
-              <div>No hay fotos aún</div>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
-              {galeria.map(foto => (
-                <div key={foto.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '1px solid #1e1e1e' }}>
-                  <img src={STORAGE_URL + foto.imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  {foto.descripcion && (
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,.7)', fontSize: '9px', color: '#ccc', padding: '4px 6px' }}>{foto.descripcion}</div>
-                  )}
-                  <button onClick={() => deleteGaleriaFoto(foto.id)}
-                    style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(204,26,26,.85)', border: 'none', borderRadius: '50%', width: '22px', height: '22px', color: '#fff', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* CONFIG */}
       {view === 'config' && (
         <div style={{ maxWidth: '400px' }}>
           <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>⚙️ Recargos globales</div>
-          {[['Recargo talla XL/XXL/XXXL', 'recargo_xl'], ['Recargo estampado', 'recargo_estampado'], ['Recargo versión Player', 'recargo_player']].map(([label, key]) => (
+          {[['Recargo estampado', 'recargo_estampado'], ['Recargo versión Player', 'recargo_player']].map(([label, key]) => (
             <div key={key}>
               <label style={lbl}>{label}</label>
               <input style={inp()} type="number" value={config[key] || ''} onChange={e => setConfig(c => ({ ...c, [key]: parseInt(e.target.value) }))} />
