@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { supabase, ADMIN_PASSWORD } from './lib/supabase'
 import Header from './components/Header'
 import Catalog from './pages/Catalog'
@@ -8,8 +8,6 @@ import InfoPage from './pages/InfoPage'
 import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import FavoritesPage from './pages/FavoritesPage'
-import GaleriaPage from './pages/GaleriaPage'
-import WhatsAppButton from './components/WhatsAppButton'
 import GaleriaPage from './pages/GaleriaPage'
 import WhatsAppButton from './components/WhatsAppButton'
 
@@ -136,10 +134,11 @@ export default function App() {
 
       {cartCount > 0 && !showCart && (
         <button onClick={() => setShowCart(true)} style={{ position: 'fixed', bottom: '24px', right: '20px', background: '#cc1a1a', border: 'none', borderRadius: '50px', padding: '12px 20px', color: '#fff', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(204,26,26,.5)', zIndex: 40 }}>
-          🛒 <span style={{ background: 'rgba(255,255,255,.25)', borderRadius: '20px', padding: '2px 8px', fontSize: '13px' }}>{cartCount}</span>
+          ðŸ›’ <span style={{ background: 'rgba(255,255,255,.25)', borderRadius: '20px', padding: '2px 8px', fontSize: '13px' }}>{cartCount}</span>
         </button>
       )}
       <WhatsAppButton />
     </div>
   )
 }
+
