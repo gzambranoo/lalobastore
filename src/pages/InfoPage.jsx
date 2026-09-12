@@ -4,14 +4,14 @@ const WA_URL = `https://wa.me/${WA_NUMBER}?text=${WA_MSG}`
 
 export default function InfoPage({ config }) {
   const prices = [
-    { label: 'Camiseta Fan', price: 20000 },
-    { label: 'Camiseta Retro', price: 23000 },
-    { label: 'Camiseta Fan Manga Larga', price: 25000 },
-    { label: 'Camiseta Player Version', price: 28000 },
-    { label: 'Camiseta Player Version Manga Larga', price: 35000 },
-    { label: 'Cortavientos', price: 45000 },
-    { label: 'Short Fan', price: 15000 },
-    { label: 'Short Player Version', price: 19000 },
+    { label: 'Camiseta Fan', price: 19990 },
+    { label: 'Camiseta Retro', price: 22990 },
+    { label: 'Camiseta Fan Manga Larga', price: 24990 },
+    { label: 'Camiseta Player Version', price: 27990 },
+    { label: 'Camiseta Player Version Manga Larga', price: 34990 },
+    { label: 'Cortavientos', price: 44990 },
+    { label: 'Short Fan', price: 13990 },
+    { label: 'Short Player Version', price: 17990 },
   ]
 
   return (
@@ -49,8 +49,7 @@ export default function InfoPage({ config }) {
         </table>
         <div style={{ borderTop: '1px solid #1e1e1e', marginTop: '12px', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
           {[
-            ['Talla XL, XXL, XXXL', `+$${config.recargo_xl?.toLocaleString('es-CL')}`],
-            ['Estampado (nombre + número)', `+$${config.recargo_estampado?.toLocaleString('es-CL')}`],
+['Estampado (nombre + número)', `+$${config.recargo_estampado?.toLocaleString('es-CL')}`],
           ].map(([label, value], i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
               <span style={{ color: '#888' }}>{label}</span>

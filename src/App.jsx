@@ -9,6 +9,9 @@ import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import FavoritesPage from './pages/FavoritesPage'
 import GaleriaPage from './pages/GaleriaPage'
+import WhatsAppButton from './components/WhatsAppButton'
+import GaleriaPage from './pages/GaleriaPage'
+import WhatsAppButton from './components/WhatsAppButton'
 
 export default function App() {
   const [products, setProducts] = useState([])
@@ -122,6 +125,7 @@ export default function App() {
         {page === 'product' && selectedProduct && <ProductPage product={selectedProduct} products={products} config={config} onAddToCart={addToCart} onSelectProduct={p => openProduct(p, true)} onBack={goBack} favorites={favorites} onToggleFav={toggleFav} />}
         {page === 'info' && <InfoPage config={config} />}
         {page === 'favorites' && <FavoritesPage products={favProducts} onSelectProduct={p => openProduct(p)} favorites={favorites} onToggleFav={toggleFav} />}
+        {page === 'galeria' && <GaleriaPage isAdmin={isAdmin} />}
         {page === 'galeria' && <GaleriaPage />}
         {page === 'admin' && isAdmin && <AdminPanel products={products} config={config} setConfig={setConfig} reloadProducts={loadProducts} />}
       </main>
@@ -135,6 +139,7 @@ export default function App() {
           🛒 <span style={{ background: 'rgba(255,255,255,.25)', borderRadius: '20px', padding: '2px 8px', fontSize: '13px' }}>{cartCount}</span>
         </button>
       )}
+      <WhatsAppButton />
     </div>
   )
 }

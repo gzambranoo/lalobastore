@@ -2,7 +2,6 @@ import { useState, useRef } from 'react'
 import { STORAGE_URL } from '../lib/supabase'
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
-const XL_SIZES = ['XL', 'XXL', 'XXXL']
 
 export default function ProductPage({ product, products, config, onAddToCart, onSelectProduct, onBack }) {
   const [imgIndex, setImgIndex] = useState(0)
@@ -14,9 +13,8 @@ export default function ProductPage({ product, products, config, onAddToCart, on
   const touchStart = useRef(null)
 
   const images = product.imagenes || []
-  const xlExtra = XL_SIZES.includes(size) ? config.recargo_xl : 0
   const estExtra = wantsEstampado ? config.recargo_estampado : 0
-  const total = (product.precio || 0) + xlExtra + estExtra
+  const total = (product.precio || 0) + estExtra
 
   // Find linked version
   const linkedProduct = product.camiseta_vinculada
@@ -115,7 +113,7 @@ export default function ProductPage({ product, products, config, onAddToCart, on
           {/* Price */}
           <div style={{ fontSize: '32px', fontWeight: 800, color: '#cc1a1a', marginBottom: '20px' }}>
             ${total.toLocaleString('es-CL')}
-            {xlExtra > 0 && <span style={{ fontSize: '12px', color: '#f59e0b', marginLeft: '8px', fontWeight: 600 }}>+${xlExtra.toLocaleString('es-CL')} talla {size}</span>}
+            
             {estExtra > 0 && <span style={{ fontSize: '12px', color: '#f59e0b', marginLeft: '8px', fontWeight: 600 }}>+${estExtra.toLocaleString('es-CL')} estampado</span>}
           </div>
 

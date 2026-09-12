@@ -1,3 +1,5 @@
+const WA_URL = 'https://wa.me/56982633425?text=Hola%2C%20tengo%20una%20consulta%20sobre%20La%20Loba%20Store'
+
 export default function Header({ page, setPage, cartCount, onCartClick, isAdmin, onBack, showBack, favCount }) {
   const navBtn = (p, label, extra = {}) => (
     <button onClick={() => setPage(p)} style={{
@@ -35,6 +37,12 @@ export default function Header({ page, setPage, cartCount, onCartClick, isAdmin,
           }}>
             ❤️ Favoritas {favCount > 0 && <span style={{ background: '#cc1a1a', color: '#fff', borderRadius: '10px', padding: '1px 6px', fontSize: '11px' }}>{favCount}</span>}
           </button>
+          <button onClick={() => setPage('galeria')} style={{
+            background: page === 'galeria' ? '#1a0000' : 'none',
+            border: `1px solid ${page === 'galeria' ? '#cc1a1a' : 'transparent'}`,
+            color: page === 'galeria' ? '#cc1a1a' : '#888',
+            borderRadius: '8px', padding: '7px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer'
+          }}>📸 Galería</button>
           {isAdmin && navBtn('admin', '⚙️ Admin')}
           <button onClick={onCartClick} style={{
             background: '#1a0000', border: '1px solid #cc1a1a', color: '#fff',

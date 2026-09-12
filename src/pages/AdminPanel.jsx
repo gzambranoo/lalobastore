@@ -7,10 +7,23 @@ const TALLAS = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 const ESTADOS_PEDIDO = ['pendiente', 'en proceso', 'listo', 'entregado', 'cancelado']
 const ESTADO_COLORS = { pendiente: '#f59e0b', 'en proceso': '#3b82f6', listo: '#22c55e', entregado: '#888', cancelado: '#ef4444' }
 
+function getAutoPrice(tipo, version, manga) {
+  if (tipo === 'camiseta') {
+    if (version === 'fan') return manga === 'larga' ? '24990' : '19990'
+    if (version === 'player') return manga === 'larga' ? '34990' : '27990'
+  }
+  if (tipo === 'short') {
+    if (version === 'fan') return '13990'
+    if (version === 'player') return '17990'
+  }
+  if (tipo === 'cortavientos') return '44990'
+  return ''
+}
+
 function defaultForm() {
   return {
-    nombre: '', color: '', precio: '', tipo_producto: 'camiseta',
-    version: 'fan', categorias: '', region: 'europa',
+    nombre: '', color: '', precio: '19990', tipo_producto: 'camiseta',
+    version: 'fan', manga: 'corta', categorias: '', region: 'europa',
     retro: false, destacada: false,
     camiseta_vinculada: '', tallas_stock: []
   }
@@ -259,9 +272,11 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   }
 
   function startEdit(p) {
+    const manga = p.nombre?.toLowerCase().includes(' ml') || p.nombre?.toLowerCase().includes('manga larga') ? 'larga' : 'corta'
     setForm({
       nombre: p.nombre, color: p.color || '', precio: p.precio?.toString() || '',
       tipo_producto: p.tipo_producto || 'camiseta', version: p.version || 'fan',
+      manga,
       categorias: (p.categorias || []).join(', '), region: p.region || 'europa',
       retro: p.retro || false, destacada: p.destacada || false,
       camiseta_vinculada: p.camiseta_vinculada || '', tallas_stock: p.tallas_stock || []
@@ -483,20 +498,49 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
               <label style={lbl}>Nombre *</label>
               <input style={inp()} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Liverpool Local 26/27" />
             </div>
-            <div><label style={lbl}>Precio (CLP) *</label><input style={inp()} type="number" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} /></div>
+            <div>
+              <label style={lbl}>Precio (CLP) *</label>
+              <input style={inp()} type="number" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} />
+              {getAutoPrice(form.tipo_producto, form.version, form.manga) && (
+                <div style={{ fontSize: '10px', color: '#555', marginTop: '-8px', marginBottom: '8px' }}>
+                  Precio sugerido: <button type="button" onClick={() => setForm(f => ({ ...f, precio: getAutoPrice(f.tipo_producto, f.version, f.manga) }))}
+                    style={{ background: 'none', border: 'none', color: '#cc1a1a', fontSize: '10px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                    ${parseInt(getAutoPrice(form.tipo_producto, form.version, form.manga)).toLocaleString('es-CL')}
+                  </button>
+                </div>
+              )}
+            </div>
             <div><label style={lbl}>Color</label><input style={inp()} value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} /></div>
             <div>
               <label style={lbl}>Tipo</label>
-              <select style={inp()} value={form.tipo_producto} onChange={e => setForm(f => ({ ...f, tipo_producto: e.target.value }))}>
+              <select style={inp()} value={form.tipo_producto} onChange={e => {
+                const tipo = e.target.value
+                setForm(f => ({ ...f, tipo_producto: tipo, precio: getAutoPrice(tipo, f.version, f.manga) }))
+              }}>
                 {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
               <label style={lbl}>Versión</label>
-              <select style={inp()} value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))}>
+              <select style={inp()} value={form.version} onChange={e => {
+                const version = e.target.value
+                setForm(f => ({ ...f, version, precio: getAutoPrice(f.tipo_producto, version, f.manga) }))
+              }}>
                 {VERSIONS.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
+            {form.tipo_producto === 'camiseta' && (
+              <div>
+                <label style={lbl}>Manga</label>
+                <select style={inp()} value={form.manga || 'corta'} onChange={e => {
+                  const manga = e.target.value
+                  setForm(f => ({ ...f, manga, precio: getAutoPrice(f.tipo_producto, f.version, manga) }))
+                }}>
+                  <option value="corta">Manga corta</option>
+                  <option value="larga">Manga larga</option>
+                </select>
+              </div>
+            )}
             <div>
               <label style={lbl}>Región</label>
               <select style={inp()} value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))}>
