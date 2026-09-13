@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase, ADMIN_PASSWORD } from './lib/supabase'
 import Header from './components/Header'
 import Catalog from './pages/Catalog'
@@ -9,7 +9,6 @@ import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import FavoritesPage from './pages/FavoritesPage'
 import GaleriaPage from './pages/GaleriaPage'
-import WhatsAppButton from './components/WhatsAppButton'
 
 export default function App() {
   const [products, setProducts] = useState([])
@@ -18,7 +17,7 @@ export default function App() {
   const [page, setPage] = useState('catalog')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [productHistory, setProductHistory] = useState([])
-  const [catalogState, setCatalogState] = useState(null) // preserves filters + scroll
+  const [catalogState, setCatalogState] = useState(null)
   const [showCart, setShowCart] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
@@ -67,8 +66,6 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
-
-
   function goBack() {
     if (productHistory.length > 0) {
       const prev = productHistory[productHistory.length - 1]
@@ -78,7 +75,6 @@ export default function App() {
     } else {
       setPage('catalog')
       setSelectedProduct(null)
-      // Restore scroll position after render
       setTimeout(() => {
         if (catalogState?.scrollY) window.scrollTo(0, catalogState.scrollY)
       }, 50)
@@ -111,9 +107,12 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
       <Header
-        page={page} setPage={p => { setPage(p); setSelectedProduct(null); setProductHistory([]) }}
-        cartCount={cartCount} onCartClick={() => setShowCart(true)}
-        isAdmin={isAdmin} onBack={goBack}
+        page={page}
+        setPage={p => { setPage(p); setSelectedProduct(null); setProductHistory([]) }}
+        cartCount={cartCount}
+        onCartClick={() => setShowCart(true)}
+        isAdmin={isAdmin}
+        onBack={goBack}
         showBack={page === 'product'}
         favCount={favorites.length}
       />
@@ -124,21 +123,17 @@ export default function App() {
         {page === 'info' && <InfoPage config={config} />}
         {page === 'favorites' && <FavoritesPage products={favProducts} onSelectProduct={p => openProduct(p)} favorites={favorites} onToggleFav={toggleFav} />}
         {page === 'galeria' && <GaleriaPage isAdmin={isAdmin} />}
-        {page === 'galeria' && <GaleriaPage />}
         {page === 'admin' && isAdmin && <AdminPanel products={products} config={config} setConfig={setConfig} reloadProducts={loadProducts} />}
       </main>
 
       {showCart && <Cart cart={cart} removeFromCart={removeFromCart} onClose={() => setShowCart(false)} config={config} clearCart={clearCart} />}
-
       {showAdminLogin && !isAdmin && <AdminLogin onLogin={handleAdminLogin} onClose={() => { setShowAdminLogin(false); window.history.replaceState({}, '', window.location.pathname) }} />}
 
       {cartCount > 0 && !showCart && (
-        <button onClick={() => setShowCart(true)} style={{ position: 'fixed', bottom: '24px', right: '20px', background: '#cc1a1a', border: 'none', borderRadius: '50px', padding: '12px 20px', color: '#fff', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(204,26,26,.5)', zIndex: 40 }}>
-          ðŸ›’ <span style={{ background: 'rgba(255,255,255,.25)', borderRadius: '20px', padding: '2px 8px', fontSize: '13px' }}>{cartCount}</span>
+        <button onClick={() => setShowCart(true)} style={{ position: 'fixed', bottom: '24px', right: '20px', background: '#cc1a1a', border: 'none', borderRadius: '50px', padding: '12px 20px', color: '#fff', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(204,26,26,.5)', zIndex: 40, cursor: 'pointer' }}>
+          🛒 <span style={{ background: 'rgba(255,255,255,.25)', borderRadius: '20px', padding: '2px 8px', fontSize: '13px' }}>{cartCount}</span>
         </button>
       )}
-      <WhatsAppButton />
     </div>
   )
 }
-
