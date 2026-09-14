@@ -3,7 +3,7 @@ import { STORAGE_URL } from '../lib/supabase'
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
-export default function ProductPage({ product, products, config, onAddToCart, onSelectProduct, onBack }) {
+export default function ProductPage({ product, products, config, onAddToCart, onSelectProduct, onBack, favorites, onToggleFav }) {
   const [imgIndex, setImgIndex] = useState(0)
   const [size, setSize] = useState('')
   const [wantsEstampado, setWantsEstampado] = useState(null)
@@ -13,10 +13,9 @@ export default function ProductPage({ product, products, config, onAddToCart, on
   const touchStart = useRef(null)
 
   const images = product.imagenes || []
-  const estExtra = wantsEstampado ? config.recargo_estampado : 0
+  const estExtra = wantsEstampado ? (config.recargo_estampado || 3000) : 0
   const total = (product.precio || 0) + estExtra
 
-  // Find linked version
   const linkedProduct = product.camiseta_vinculada
     ? products.find(p => p.id === product.camiseta_vinculada)
     : null
@@ -32,7 +31,8 @@ export default function ProductPage({ product, products, config, onAddToCart, on
       estampado: wantsEstampado,
       estName: wantsEstampado ? estName : '',
       estNum: wantsEstampado ? estNum : '',
-      stockType: product.stock_estado,
+      stockType: product.tallas_stock?.length > 0 ? 'stock' : 'pedido',
+      unitPrice: product.precio,
       total,
     })
     setAdded(true)
@@ -49,37 +49,35 @@ export default function ProductPage({ product, products, config, onAddToCart, on
     touchStart.current = null
   }
 
-  const isStock = product.stock_estado === 'stock'
+  const hasStock = product.tallas_stock?.length > 0
   const isPlayer = product.version === 'player'
+  const isFav = favorites?.includes(product.id)
 
   return (
     <div style={{ paddingTop: '20px', maxWidth: '900px', margin: '0 auto' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '32px' }} className="product-grid">
-        {/* Left: images */}
+
+        {/* Images */}
         <div>
-          {/* Main image */}
-          <div
-            onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-            style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: '#141414', aspectRatio: '1', marginBottom: '10px', userSelect: 'none' }}
-          >
+          <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+            style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: '#141414', aspectRatio: '1', marginBottom: '10px', userSelect: 'none' }}>
             {images.length > 0
               ? <img src={STORAGE_URL + images[imgIndex]} alt={product.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px' }}>👕</div>
             }
             {images.length > 1 && (
               <>
-                <button onClick={prevImg} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,.6)', border: 'none', color: '#fff', borderRadius: '50%', width: '36px', height: '36px', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>‹</button>
-                <button onClick={nextImg} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,.6)', border: 'none', color: '#fff', borderRadius: '50%', width: '36px', height: '36px', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>›</button>
+                <button onClick={prevImg} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,.6)', border: 'none', color: '#fff', borderRadius: '50%', width: '36px', height: '36px', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>‹</button>
+                <button onClick={nextImg} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,.6)', border: 'none', color: '#fff', borderRadius: '50%', width: '36px', height: '36px', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>›</button>
                 <div style={{ position: 'absolute', bottom: '10px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '5px' }}>
                   {images.map((_, i) => <div key={i} onClick={() => setImgIndex(i)} style={{ width: i === imgIndex ? '18px' : '6px', height: '6px', borderRadius: '3px', background: i === imgIndex ? '#cc1a1a' : 'rgba(255,255,255,.4)', cursor: 'pointer', transition: 'all .2s' }} />)}
                 </div>
-                <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,.6)', color: '#fff', fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '10px', backdropFilter: 'blur(4px)' }}>
+                <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,.6)', color: '#fff', fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '10px' }}>
                   {imgIndex + 1}/{images.length}
                 </div>
               </>
             )}
           </div>
-          {/* Thumbnails */}
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {images.map((img, i) => (
@@ -91,29 +89,30 @@ export default function ProductPage({ product, products, config, onAddToCart, on
           )}
         </div>
 
-        {/* Right: info + actions */}
+        {/* Info */}
         <div>
-          {/* Badges */}
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-            <span style={{ background: isStock ? '#14532d' : '#1c1c1c', color: isStock ? '#4ade80' : '#f59e0b', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: `1px solid ${isStock ? '#16a34a' : '#3a2800'}` }}>
-              {isStock ? '● En stock' : '○ A pedido'}
-            </span>
+          {/* Badges + fav */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
+            {hasStock
+              ? <span style={{ background: '#14532d', color: '#4ade80', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #16a34a' }}>● En stock: {product.tallas_stock.join(', ')}</span>
+              : <span style={{ background: '#1c1c1c', color: '#f59e0b', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #3a2800' }}>○ A pedido</span>
+            }
             {isPlayer && <span style={{ background: '#1a0a2a', color: '#a78bfa', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #7c3aed' }}>PLAYER VERSION</span>}
             {product.retro && <span style={{ background: '#2a1500', color: '#f59e0b', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px' }}>Retro</span>}
+            <button onClick={() => onToggleFav && onToggleFav(product.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer' }}>
+              {isFav ? '❤️' : '🤍'}
+            </button>
           </div>
 
           <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '6px', lineHeight: 1.2 }}>{product.nombre}</h1>
           <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>{product.color}</div>
 
-          {/* Tags */}
           <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '16px' }}>
             {product.categorias?.map(c => <span key={c} style={{ fontSize: '11px', background: '#1e1e1e', color: '#888', borderRadius: '6px', padding: '3px 8px', border: '1px solid #2a2a2a' }}>{c}</span>)}
           </div>
 
-          {/* Price */}
           <div style={{ fontSize: '32px', fontWeight: 800, color: '#cc1a1a', marginBottom: '20px' }}>
             ${total.toLocaleString('es-CL')}
-            
             {estExtra > 0 && <span style={{ fontSize: '12px', color: '#f59e0b', marginLeft: '8px', fontWeight: 600 }}>+${estExtra.toLocaleString('es-CL')} estampado</span>}
           </div>
 
@@ -134,25 +133,33 @@ export default function ProductPage({ product, products, config, onAddToCart, on
 
           {/* Size */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', color: '#888', marginBottom: '8px', fontWeight: 600 }}>Talla</div>
+            <div style={{ fontSize: '13px', color: '#888', fontWeight: 600, marginBottom: '8px' }}>Talla</div>
             <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
-              {SIZES.map(s => (
-                <button key={s} onClick={() => setSize(s)} style={{ padding: '9px 16px', borderRadius: '9px', border: `1px solid ${size === s ? '#cc1a1a' : '#2a2a2a'}`, background: size === s ? '#cc1a1a' : '#141414', color: size === s ? '#fff' : '#aaa', fontSize: '14px', fontWeight: size === s ? 700 : 400, minWidth: '50px' }}>
-                  {s}
-                </button>
-              ))}
+              {SIZES.map(s => {
+                const hasStockSize = hasStock && product.tallas_stock?.includes(s)
+                const isSelected = size === s
+                return (
+                  <button key={s} onClick={() => setSize(s)}
+                    style={{ padding: '9px 16px', borderRadius: '9px', border: `2px solid ${isSelected ? '#cc1a1a' : hasStockSize ? '#22c55e' : '#2a2a2a'}`, background: isSelected ? '#cc1a1a' : hasStockSize ? '#14532d' : '#141414', color: isSelected ? '#fff' : hasStockSize ? '#4ade80' : '#aaa', fontSize: '14px', fontWeight: isSelected || hasStockSize ? 700 : 400, minWidth: '50px', cursor: 'pointer', position: 'relative' }}>
+                    {s}
+                    {hasStockSize && !isSelected && <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '9px', height: '9px', background: '#22c55e', borderRadius: '50%', border: '2px solid #141414' }} />}
+                  </button>
+                )
+              })}
             </div>
-            {XL_SIZES.includes(size) && <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '6px' }}>+${config.recargo_xl?.toLocaleString('es-CL')} por talla {size}</div>}
+            <div style={{ fontSize: '11px', color: '#555', marginTop: '6px' }}>
+              {hasStock ? '● Verde = en stock · Resto = a pedido (igual puedes encargar)' : '○ Todas las tallas disponibles a pedido'}
+            </div>
           </div>
 
           {/* Estampado */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', color: '#888', marginBottom: '8px', fontWeight: 600 }}>¿Agregar nombre y número?</div>
+            <div style={{ fontSize: '13px', color: '#888', fontWeight: 600, marginBottom: '8px' }}>¿Agregar nombre y número?</div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-              <button onClick={() => setWantsEstampado(true)} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === true ? '#cc1a1a' : '#2a2a2a'}`, background: wantsEstampado === true ? '#cc1a1a' : '#141414', color: wantsEstampado === true ? '#fff' : '#aaa', fontSize: '13px', fontWeight: 600 }}>
-                ✅ Sí (+${config.recargo_estampado?.toLocaleString('es-CL')})
+              <button onClick={() => setWantsEstampado(true)} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === true ? '#cc1a1a' : '#2a2a2a'}`, background: wantsEstampado === true ? '#cc1a1a' : '#141414', color: wantsEstampado === true ? '#fff' : '#aaa', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                ✅ Sí (+${(config.recargo_estampado || 3000).toLocaleString('es-CL')})
               </button>
-              <button onClick={() => { setWantsEstampado(false); setEstName(''); setEstNum('') }} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === false ? '#cc1a1a' : '#2a2a2a'}`, background: wantsEstampado === false ? '#1a0000' : '#141414', color: wantsEstampado === false ? '#ff6666' : '#aaa', fontSize: '13px', fontWeight: 600 }}>
+              <button onClick={() => { setWantsEstampado(false); setEstName(''); setEstNum('') }} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === false ? '#cc1a1a' : '#2a2a2a'}`, background: wantsEstampado === false ? '#1a0000' : '#141414', color: wantsEstampado === false ? '#ff6666' : '#aaa', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                 ❌ No
               </button>
             </div>
@@ -165,7 +172,8 @@ export default function ProductPage({ product, products, config, onAddToCart, on
           </div>
 
           {/* Add to cart */}
-          <button onClick={handleAdd} disabled={!size || wantsEstampado === null} style={{ width: '100%', padding: '16px', borderRadius: '12px', background: added ? '#14532d' : (size && wantsEstampado !== null) ? '#cc1a1a' : '#2a2a2a', border: 'none', color: (size && wantsEstampado !== null) ? '#fff' : '#555', fontSize: '16px', fontWeight: 700, transition: 'background .3s' }}>
+          <button onClick={handleAdd} disabled={!size || wantsEstampado === null}
+            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: added ? '#14532d' : (size && wantsEstampado !== null) ? '#cc1a1a' : '#2a2a2a', border: 'none', color: (size && wantsEstampado !== null) ? '#fff' : '#555', fontSize: '16px', fontWeight: 700, cursor: (size && wantsEstampado !== null) ? 'pointer' : 'not-allowed', transition: 'background .3s' }}>
             {added ? '✓ Agregado al carrito' : `🛒 Agregar — $${total.toLocaleString('es-CL')}`}
           </button>
 
@@ -177,11 +185,7 @@ export default function ProductPage({ product, products, config, onAddToCart, on
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 640px) {
-          .product-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
-        }
-      `}</style>
+      <style>{`@media (max-width: 640px) { .product-grid { grid-template-columns: 1fr !important; gap: 20px !important; } }`}</style>
     </div>
   )
 }
