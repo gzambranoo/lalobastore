@@ -47,6 +47,32 @@ function GalleryCarousel({ fotos, onOpen }) {
 
 const shuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] } return a }
 
+function Lookbook({ items, products, onSelectProduct }) {
+  const byId = useMemo(() => Object.fromEntries(products.map(p => [String(p.id), p])), [products])
+  const [big, ...small] = items
+  const Cell = ({ it, large }) => {
+    const p = byId[String(it.camiseta_id)]
+    const clickable = !!p
+    return (
+      <div onClick={clickable ? () => onSelectProduct(p) : undefined} className={(clickable ? 'lb-tile' : '') + (large ? ' lb-look-big' : '')} style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px', border: '1px solid var(--border)', background: 'var(--card2)', cursor: clickable ? 'pointer' : 'default', gridColumn: large ? 'span 2' : undefined, gridRow: large ? 'span 2' : undefined, aspectRatio: large ? undefined : '1/1', minHeight: 0 }}>
+        <img src={STORAGE_URL + it.imagen} alt={p?.nombre || 'Lookbook'} loading="lazy" style={{ position: large ? 'absolute' : 'static', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        {p && (
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '28px 14px 12px', background: 'linear-gradient(transparent, rgba(0,0,0,.78))', color: '#fff' }}>
+            <div style={{ fontSize: large ? '16px' : '13px', fontWeight: 800, lineHeight: 1.2 }}>{p.nombre}</div>
+            <div style={{ fontSize: '12px', opacity: .85, marginTop: '2px' }}>${p.precio?.toLocaleString('es-CL')}{large ? ' · Ver camiseta →' : ''}</div>
+          </div>
+        )}
+      </div>
+    )
+  }
+  return (
+    <div className="lb-look" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+      <Cell it={big} large />
+      {small.map(it => <Cell key={it.id} it={it} />)}
+    </div>
+  )
+}
+
 function SectionHead({ title, sub, onMore, moreLabel = 'Ver todo →' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', margin: '40px 0 16px', gap: '12px' }}>
@@ -63,9 +89,11 @@ export default function HomePage({ products, loading, go, onSelectProduct, favor
   const [banners, setBanners] = useState([])
   const [bannerIdx, setBannerIdx] = useState(0)
   const [fotos, setFotos] = useState([])
+  const [look, setLook] = useState([])
 
   useEffect(() => {
     supabase.from('banners').select('*').order('orden', { ascending: true }).then(({ data, error }) => { if (!error && data) setBanners(data) })
+    supabase.from('lookbook').select('*').eq('destacada', true).order('orden', { ascending: true }).limit(5).then(({ data, error }) => { if (!error && data) setLook(data) })
     supabase.from('galeria').select('*').order('created_at', { ascending: false }).limit(14).then(({ data, error }) => { if (!error && data) setFotos(data) })
   }, [])
 
@@ -185,7 +213,12 @@ export default function HomePage({ products, loading, go, onSelectProduct, favor
         </>
       )}
 
-      {/* LOOKBOOK: se agrega en el paso 2b */}
+      {look.length > 0 && (
+        <>
+          <SectionHead title="Lookbook 26/27" sub="Las camisetas de la temporada, puestas" />
+          <Lookbook items={look} products={products} onSelectProduct={onSelectProduct} />
+        </>
+      )}
 
       {/* FRANJAS DE CONFIANZA */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '48px' }}>

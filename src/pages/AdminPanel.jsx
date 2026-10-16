@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase, STORAGE_URL } from '../lib/supabase'
 import { uploadImage, fmtKB } from '../lib/uploadImage'
 import BannersAdmin from './BannersAdmin'
+import LookbookAdmin from './LookbookAdmin'
 
 const TIPOS = ['camiseta', 'short', 'cortavientos', 'entrenamiento', 'ropa']
 const VERSIONS = ['fan', 'player']
@@ -284,6 +285,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
         </button>
         {navBtn('list', `📋 Productos (${products.length})`)}
         {navBtn('add', '➕ Agregar')}
+        {navBtn('lookbook', '📸 Lookbook')}
         {navBtn('banners', '🖼️ Banners')}
         {navBtn('config', '⚙️ Config')}
       </div>
@@ -567,6 +569,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       )}
 
       {/* CONFIG */}
+      {view === 'lookbook' && <LookbookAdmin products={products} />}
       {view === 'banners' && <BannersAdmin />}
 
       {view === 'config' && (
