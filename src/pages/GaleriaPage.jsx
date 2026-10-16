@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, STORAGE_URL } from '../lib/supabase'
+import { uploadImage, fmtKB } from '../lib/uploadImage'
 
 export default function GaleriaPage({ isAdmin }) {
   const [fotos, setFotos] = useState([])
@@ -20,17 +21,16 @@ export default function GaleriaPage({ isAdmin }) {
 
   async function uploadFile(file) {
     setUploading(true)
-    setUploadStatus('Subiendo...')
-    const ext = file.name.split('.').pop().replace(/[^a-z]/g, '') || 'jpg'
-    const filename = `galeria_${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('Camisetas').upload(filename, file, { contentType: file.type })
-    if (error) { setUploadStatus('Error: ' + error.message); setUploading(false); return }
-    await supabase.from('galeria').insert({ imagen: filename, descripcion: desc.trim() || null })
-    setDesc('')
-    setUploadStatus('✓ Foto subida')
-    setTimeout(() => setUploadStatus(''), 2000)
+    setUploadStatus('Comprimiendo y subiendo...')
+    try {
+      const r = await uploadImage(file, 'galeria')
+      await supabase.from('galeria').insert({ imagen: r.filename, descripcion: desc.trim() || null })
+      setDesc('')
+      setUploadStatus(`✓ Foto subida · ${fmtKB(r.before)} → ${fmtKB(r.after)}`)
+      setTimeout(() => setUploadStatus(''), 3000)
+      loadFotos()
+    } catch (e) { setUploadStatus('Error: ' + e.message) }
     setUploading(false)
-    loadFotos()
   }
 
   async function handlePaste(e) {
@@ -40,21 +40,7 @@ export default function GaleriaPage({ isAdmin }) {
       if (item.type.startsWith('image/')) {
         e.preventDefault()
         const blob = item.getAsFile()
-        if (!blob) return
-        setUploading(true)
-        setUploadStatus('Subiendo imagen pegada...')
-        const filename = `galeria_${Date.now()}.jpg`
-        const { error } = await supabase.storage.from('Camisetas').upload(filename, blob, { contentType: 'image/jpeg' })
-        if (!error) {
-          await supabase.from('galeria').insert({ imagen: filename, descripcion: desc.trim() || null })
-          setDesc('')
-          setUploadStatus('✓ Foto subida')
-          setTimeout(() => setUploadStatus(''), 2000)
-          loadFotos()
-        } else {
-          setUploadStatus('Error: ' + error.message)
-        }
-        setUploading(false)
+        if (blob) await uploadFile(blob)
         break
       }
     }
