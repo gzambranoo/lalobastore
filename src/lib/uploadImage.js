@@ -29,8 +29,8 @@ export async function compressImage(file, { maxSize = 1600, quality = 0.82 } = {
 }
 
 // Comprime y sube a R2 vía /api/upload. Devuelve { filename, before, after }.
-export async function uploadImage(file, prefix = 'img') {
-  const blob = await compressImage(file)
+export async function uploadImage(file, prefix = 'img', opts = {}) {
+  const blob = await compressImage(file, opts)
   const res = await fetch('/api/upload', {
     method: 'POST',
     headers: {

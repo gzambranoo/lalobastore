@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase, STORAGE_URL } from '../lib/supabase'
 import { uploadImage, fmtKB } from '../lib/uploadImage'
+import BannersAdmin from './BannersAdmin'
 
 const TIPOS = ['camiseta', 'short', 'cortavientos', 'entrenamiento', 'ropa']
 const VERSIONS = ['fan', 'player']
@@ -283,6 +284,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
         </button>
         {navBtn('list', `📋 Productos (${products.length})`)}
         {navBtn('add', '➕ Agregar')}
+        {navBtn('banners', '🖼️ Banners')}
         {navBtn('config', '⚙️ Config')}
       </div>
 
@@ -565,6 +567,8 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       )}
 
       {/* CONFIG */}
+      {view === 'banners' && <BannersAdmin />}
+
       {view === 'config' && (
         <div style={{ maxWidth: '400px' }}>
           <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>⚙️ Recargos globales</div>

@@ -1,9 +1,10 @@
 const TABS = [
   ['home', 'Inicio'],
-  ['catalog', 'Camisetas'],
+  ['catalog', 'Productos'],
   ['clubs', 'Clubes'],
   ['selecciones', 'Selecciones'],
   ['retro', 'Retro'],
+  ['ropa', 'Ropa'],
   ['galeria', 'Galería'],
   ['info', 'Info'],
 ]

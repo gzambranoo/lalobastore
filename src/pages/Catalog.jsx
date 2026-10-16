@@ -13,8 +13,9 @@ const TIPO_CATS = [
 const LIGAS_EUROPA = ['Premier League','La Liga','LaLiga','Serie A','Bundesliga','Ligue 1','Champions']
 const LIGAS_SUD = ['Liga Chilena','Liga Argentina','Brasileirao']
 
-export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav, savedState: savedAny, preset, initial, pageKey, title, subtitle }) {
+export default function Catalog({ products: allProducts, loading, onSelectProduct, favorites, onToggleFav, savedState: savedAny, preset, initial, pageKey, title, subtitle }) {
   const savedState = savedAny && savedAny.pageKey === pageKey ? savedAny : null
+  const products = useMemo(() => preset === 'ropa' ? allProducts.filter(p => p.tipo_producto !== 'camiseta') : allProducts, [allProducts, preset])
   const [search, setSearch] = useState(savedState?.search || '')
   const [tipoCat, setTipoCat] = useState(savedState?.tipoCat || initial?.tipoCat || 'all')
   const [version, setVersion] = useState(savedState?.version || initial?.version || 'all')
@@ -206,7 +207,7 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
 
       {/* Category tabs */}
       <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px' }}>
-        {TIPO_CATS.map(cat => pill(cat.label, tipoCat === cat.key, () => setTipoCat(cat.key)))}
+        {TIPO_CATS.filter(c => preset !== 'ropa' || c.key !== 'camiseta').map(cat => pill(cat.label, tipoCat === cat.key, () => setTipoCat(cat.key)))}
       </div>
 
       {/* Filter panel */}

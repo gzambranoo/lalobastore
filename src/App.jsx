@@ -12,10 +12,11 @@ import GaleriaPage from './pages/GaleriaPage'
 import HomePage from './pages/HomePage'
 
 const CATALOG_PAGES = {
-  catalog: { title: 'Camisetas', subtitle: 'Todo el catálogo: camisetas, shorts y más' },
+  catalog: { title: 'Productos', subtitle: 'Todo el catálogo: camisetas, shorts, cortavientos y más' },
   clubs: { preset: 'club', title: 'Clubes', subtitle: 'Elige tu liga y tu equipo' },
   selecciones: { preset: 'seleccion', title: 'Selecciones', subtitle: 'Por región y país' },
   retro: { preset: 'retro', title: 'Retro', subtitle: 'Camisetas clásicas que hicieron historia' },
+  ropa: { preset: 'ropa', title: 'Ropa', subtitle: 'Shorts, cortavientos, poleras y más' },
 }
 
 export default function App() {
