@@ -9,13 +9,24 @@ import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import FavoritesPage from './pages/FavoritesPage'
 import GaleriaPage from './pages/GaleriaPage'
+import HomePage from './pages/HomePage'
+
+const CATALOG_PAGES = {
+  catalog: { title: 'Camisetas', subtitle: 'Todo el catálogo: camisetas, shorts y más' },
+  clubs: { preset: 'club', title: 'Clubes', subtitle: 'Elige tu liga y tu equipo' },
+  selecciones: { preset: 'seleccion', title: 'Selecciones', subtitle: 'Por región y país' },
+  retro: { preset: 'retro', title: 'Retro', subtitle: 'Camisetas clásicas que hicieron historia' },
+}
 
 export default function App() {
   const [products, setProducts] = useState([])
   const [config, setConfig] = useState({ recargo_xl: 2000, recargo_estampado: 3000, recargo_player: 10000 })
   const [cart, setCart] = useState([])
-  const [page, setPage] = useState('catalog')
+  const [page, setPage] = useState('home')
+  const [pageOpts, setPageOpts] = useState(null)
+  const [theme, setTheme] = useState(() => { try { return localStorage.getItem('laloba_theme') === 'light' ? 'light' : 'dark' } catch { return 'dark' } })
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [cameFrom, setCameFrom] = useState('home')
   const [productHistory, setProductHistory] = useState([])
   const [catalogState, setCatalogState] = useState(null)
   const [showCart, setShowCart] = useState(false)
@@ -32,6 +43,18 @@ export default function App() {
   }, [])
 
   useEffect(() => { loadProducts(); loadConfig() }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    try { localStorage.setItem('laloba_theme', theme) } catch {}
+    const m = document.querySelector('meta[name="theme-color"]')
+    if (m) m.setAttribute('content', theme === 'light' ? '#ffffff' : '#0f0f0f')
+  }, [theme])
+
+  function go(p, opts = null) {
+    setPage(p); setPageOpts(opts); setSelectedProduct(null); setProductHistory([]); setCatalogState(null)
+    window.scrollTo(0, 0)
+  }
 
   useEffect(() => {
     localStorage.setItem('laloba_favs', JSON.stringify(favorites))
@@ -61,6 +84,7 @@ export default function App() {
     } else {
       setProductHistory([])
     }
+    if (!fromProduct) setCameFrom(page)
     setSelectedProduct(product)
     setPage('product')
     window.scrollTo(0, 0)
@@ -73,7 +97,7 @@ export default function App() {
       setSelectedProduct(prev)
       window.scrollTo(0, 0)
     } else {
-      setPage('catalog')
+      setPage(cameFrom)
       setSelectedProduct(null)
       setTimeout(() => {
         if (catalogState?.scrollY) window.scrollTo(0, catalogState.scrollY)
@@ -105,10 +129,12 @@ export default function App() {
   const favProducts = products.filter(p => favorites.includes(p.id))
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Header
         page={page}
-        setPage={p => { setPage(p); setSelectedProduct(null); setProductHistory([]) }}
+        setPage={p => go(p)}
+        theme={theme}
+        onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
         cartCount={cartCount}
         onCartClick={() => setShowCart(true)}
         isAdmin={isAdmin}
@@ -118,7 +144,8 @@ export default function App() {
       />
 
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px 100px' }}>
-        {page === 'catalog' && <Catalog products={products} loading={loading} onSelectProduct={(p, state) => { setCatalogState(state); openProduct(p) }} favorites={favorites} onToggleFav={toggleFav} config={config} savedState={catalogState} />}
+        {page === 'home' && <HomePage products={products} loading={loading} go={go} onSelectProduct={p => openProduct(p)} favorites={favorites} onToggleFav={toggleFav} />}
+        {CATALOG_PAGES[page] && <Catalog key={page + JSON.stringify(pageOpts)} pageKey={page} {...CATALOG_PAGES[page]} initial={pageOpts} products={products} loading={loading} onSelectProduct={(p, state) => { setCatalogState(state); openProduct(p) }} favorites={favorites} onToggleFav={toggleFav} savedState={catalogState} />}
         {page === 'product' && selectedProduct && <ProductPage product={selectedProduct} products={products} config={config} onAddToCart={addToCart} onSelectProduct={p => openProduct(p, true)} onBack={goBack} favorites={favorites} onToggleFav={toggleFav} />}
         {page === 'info' && <InfoPage config={config} />}
         {page === 'favorites' && <FavoritesPage products={favProducts} onSelectProduct={p => openProduct(p)} favorites={favorites} onToggleFav={toggleFav} />}

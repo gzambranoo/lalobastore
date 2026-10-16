@@ -13,17 +13,18 @@ const TIPO_CATS = [
 const LIGAS_EUROPA = ['Premier League','La Liga','LaLiga','Serie A','Bundesliga','Ligue 1','Champions']
 const LIGAS_SUD = ['Liga Chilena','Liga Argentina','Brasileirao']
 
-export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav, savedState }) {
+export default function Catalog({ products, loading, onSelectProduct, favorites, onToggleFav, savedState: savedAny, preset, initial, pageKey, title, subtitle }) {
+  const savedState = savedAny && savedAny.pageKey === pageKey ? savedAny : null
   const [search, setSearch] = useState(savedState?.search || '')
-  const [tipoCat, setTipoCat] = useState(savedState?.tipoCat || 'all')
-  const [version, setVersion] = useState(savedState?.version || 'all')
+  const [tipoCat, setTipoCat] = useState(savedState?.tipoCat || initial?.tipoCat || 'all')
+  const [version, setVersion] = useState(savedState?.version || initial?.version || 'all')
   const [stock, setStock] = useState(savedState?.stock || 'all')
-  const [retro, setRetro] = useState(savedState?.retro || false)
-  const [clubSel, setClubSel] = useState(savedState?.clubSel || '') // 'club' | 'seleccion' | ''
+  const [retro, setRetro] = useState(preset === 'retro' ? true : (savedState?.retro || false))
+  const [clubSel, setClubSel] = useState(preset === 'club' ? 'club' : preset === 'seleccion' ? 'seleccion' : (savedState?.clubSel || '')) // 'club' | 'seleccion' | ''
   const [liga, setLiga] = useState(savedState?.liga || '')
   const [regionSel, setRegionSel] = useState(savedState?.regionSel || '')
   const [equipo, setEquipo] = useState(savedState?.equipo || '')
-  const [sortBy, setSortBy] = useState(savedState?.sortBy || 'name_asc')
+  const [sortBy, setSortBy] = useState(savedState?.sortBy || initial?.sortBy || 'name_asc')
   const [showFilters, setShowFilters] = useState(false)
   const restored = useRef(false)
 
@@ -102,92 +103,36 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
       )
     }
 
-    if (sortBy === 'price_asc') result = [...result].sort((a, b) => a.precio - b.precio)
-    else if (sortBy === 'price_desc') result = [...result].sort((a, b) => b.precio - a.precio)
-    else if (sortBy === 'name_asc') result = [...result].sort((a, b) => a.nombre?.localeCompare(b.nombre))
-    else if (sortBy === 'recent') result = [...result].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    // Always: destacadas first within each sort
+    const sortWithDestacadas = (arr, compareFn) => {
+      const dest = arr.filter(p => p.destacada).sort(compareFn)
+      const rest = arr.filter(p => !p.destacada).sort(compareFn)
+      return [...dest, ...rest]
+    }
+    const byName = (a, b) => a.nombre?.localeCompare(b.nombre, 'es')
+    if (sortBy === 'price_asc') result = sortWithDestacadas([...result], (a,b) => a.precio - b.precio)
+    else if (sortBy === 'price_desc') result = sortWithDestacadas([...result], (a,b) => b.precio - a.precio)
+    else if (sortBy === 'recent') result = sortWithDestacadas([...result], (a,b) => new Date(b.created_at) - new Date(a.created_at))
+    else result = sortWithDestacadas([...result], byName) // name_asc default
 
     return result
   }, [products, tipoCat, version, stock, retro, clubSel, liga, equipo, regionSel, search, sortBy])
 
   function handleSelect(p) {
-    onSelectProduct(p, { search, tipoCat, version, stock, retro, clubSel, liga, equipo, regionSel, sortBy, scrollY: window.scrollY })
+    onSelectProduct(p, { search, tipoCat, version, stock, retro, clubSel, liga, equipo, regionSel, sortBy, scrollY: window.scrollY, pageKey })
   }
 
-  const hasFilters = tipoCat !== 'all' || version !== 'all' || stock !== 'all' || retro || clubSel || liga || equipo || regionSel || search
+  function clearAll() { setTipoCat('all'); setVersion('all'); setStock('all'); setRetro(preset === 'retro'); setClubSel(preset === 'club' ? 'club' : preset === 'seleccion' ? 'seleccion' : ''); setLiga(''); setRegionSel(''); setEquipo(''); setSearch(''); setSortBy('name_asc') }
+  const hasFilters = tipoCat !== 'all' || version !== 'all' || stock !== 'all' || (retro && preset !== 'retro') || (clubSel && !preset) || liga || equipo || regionSel || search
   const pill = (label, active, onClick, extra = {}) => (
-    <button onClick={onClick} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', border: `1px solid ${active ? '#cc1a1a' : '#2a2a2a'}`, background: active ? '#cc1a1a' : '#141414', color: active ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', ...extra }}>
+    <button onClick={onClick} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', border: `1px solid ${active ? '#cc1a1a' : 'var(--border2)'}`, background: active ? '#cc1a1a' : 'var(--card)', color: active ? '#fff' : 'var(--muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', ...extra }}>
       {label}
     </button>
   )
-  const sectionTitle = (t) => <div style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '12px 0 6px' }}>{t}</div>
+  const sectionTitle = (t) => <div style={{ fontSize: '10px', color: 'var(--faint)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '12px 0 6px' }}>{t}</div>
 
-  return (
-    <div style={{ paddingTop: '20px' }}>
-      {/* Search */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#141414', border: '1px solid #1e1e1e', borderRadius: '10px', padding: '10px 14px', gap: '8px' }}>
-          <span style={{ color: '#444', fontSize: '16px' }}>🔍</span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, equipo, país..."
-            style={{ background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', flex: 1 }} />
-          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: '#555', fontSize: '18px', cursor: 'pointer' }}>×</button>}
-        </div>
-        <button onClick={() => setShowFilters(!showFilters)} style={{ background: showFilters || hasFilters ? '#cc1a1a' : '#141414', border: `1px solid ${showFilters || hasFilters ? '#cc1a1a' : '#1e1e1e'}`, color: '#fff', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', position: 'relative' }}>
-          ⚙ Filtros {hasFilters && <span style={{ background: 'rgba(255,255,255,.3)', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>ON</span>}
-        </button>
-      </div>
-
-      {/* Category tabs */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px' }}>
-        {TIPO_CATS.map(cat => pill(cat.label, tipoCat === cat.key, () => setTipoCat(cat.key)))}
-      </div>
-
-      {/* Filter panel */}
-      {showFilters && (
-        <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
-
-          {/* Row 1: Version + Stock + Retro + Sort */}
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <div>
-              {sectionTitle('Versión')}
-              <div style={{ display: 'flex', gap: '5px' }}>
-                {[['all','Todas'],['fan','Fan'],['player','Player']].map(([v,l]) => pill(l, version===v, () => setVersion(v)))}
-              </div>
-            </div>
-            <div>
-              {sectionTitle('Disponibilidad')}
-              <div style={{ display: 'flex', gap: '5px' }}>
-                {[['all','Todo'],['stock','En stock'],['pedido','A pedido']].map(([v,l]) => pill(l, stock===v, () => setStock(v)))}
-              </div>
-            </div>
-            <div>
-              {sectionTitle('Retro')}
-              <button onClick={() => setRetro(!retro)} style={{ padding: '6px 14px', borderRadius: '20px', border: `1px solid ${retro ? '#f59e0b' : '#2a2a2a'}`, background: retro ? '#2a1500' : '#141414', color: retro ? '#f59e0b' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                🕰️ {retro ? 'Solo retro' : 'Retro'}
-              </button>
-            </div>
-            <div style={{ marginLeft: 'auto' }}>
-              {sectionTitle('Ordenar')}
-              <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: '#1e1e1e', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '6px 10px', color: '#ccc', fontSize: '12px', outline: 'none', cursor: 'pointer' }}>
-                <option value="name_asc">Nombre A→Z</option>
-                <option value="recent">Más recientes</option>
-                <option value="price_asc">Precio ↑</option>
-                <option value="price_desc">Precio ↓</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ borderTop: '1px solid #1e1e1e', margin: '14px 0' }} />
-
-          {/* Club / Selección */}
-          {sectionTitle('Categoría')}
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
-            {pill('Todos', !clubSel, () => setClubSelReset(''))}
-            {pill('⚽ Clubes', clubSel==='club', () => setClubSelReset('club'))}
-            {pill('🌍 Selecciones', clubSel==='seleccion', () => setClubSelReset('seleccion'))}
-          </div>
-
+  const drillBlock = (
+    <>
           {/* Clubes — ligas */}
           {clubSel === 'club' && (
             <>
@@ -235,11 +180,93 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
             </>
           )}
 
+    </>
+  )
+
+  return (
+    <div style={{ paddingTop: '20px' }}>
+      {title && (
+        <div style={{ marginBottom: '16px' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 900, letterSpacing: '-.5px', color: 'var(--text)' }}>{title}</h1>
+          {subtitle && <div style={{ fontSize: '13.5px', color: 'var(--muted)', marginTop: '3px' }}>{subtitle}</div>}
+        </div>
+      )}
+      {/* Search */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 14px', gap: '8px' }}>
+          <span style={{ color: 'var(--faint)', fontSize: '16px' }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, equipo, país..."
+            style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontSize: '14px', flex: 1 }} />
+          {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: 'var(--faint)', fontSize: '18px', cursor: 'pointer' }}>×</button>}
+        </div>
+        <button onClick={() => setShowFilters(!showFilters)} style={{ background: showFilters || hasFilters ? '#cc1a1a' : 'var(--card)', border: `1px solid ${showFilters || hasFilters ? '#cc1a1a' : 'var(--border)'}`, color: (showFilters || hasFilters) ? '#fff' : 'var(--text)', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', position: 'relative' }}>
+          ⚙ Filtros {hasFilters && <span style={{ background: 'rgba(255,255,255,.3)', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>ON</span>}
+        </button>
+      </div>
+
+      {/* Category tabs */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px' }}>
+        {TIPO_CATS.map(cat => pill(cat.label, tipoCat === cat.key, () => setTipoCat(cat.key)))}
+      </div>
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
+
+          {/* Row 1: Version + Stock + Retro + Sort */}
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              {sectionTitle('Versión')}
+              <div style={{ display: 'flex', gap: '5px' }}>
+                {[['all','Todas'],['fan','Fan'],['player','Player']].map(([v,l]) => pill(l, version===v, () => setVersion(v)))}
+              </div>
+            </div>
+            <div>
+              {sectionTitle('Disponibilidad')}
+              <div style={{ display: 'flex', gap: '5px' }}>
+                {[['all','Todo'],['stock','En stock'],['pedido','A pedido']].map(([v,l]) => pill(l, stock===v, () => setStock(v)))}
+              </div>
+            </div>
+            {preset !== 'retro' && <div>
+              {sectionTitle('Retro')}
+              <button onClick={() => setRetro(!retro)} style={{ padding: '6px 14px', borderRadius: '20px', border: `1px solid ${retro ? 'var(--amber)' : 'var(--border2)'}`, background: retro ? 'var(--tint-amber)' : 'var(--card)', color: retro ? 'var(--amber)' : 'var(--muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                🕰️ {retro ? 'Solo retro' : 'Retro'}
+              </button>
+            </div>}
+            <div style={{ marginLeft: 'auto' }}>
+              {sectionTitle('Ordenar')}
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: 'var(--border)', border: '1px solid var(--border2)', borderRadius: '8px', padding: '6px 10px', color: 'var(--text2)', fontSize: '12px', outline: 'none', cursor: 'pointer' }}>
+                <option value="name_asc">Nombre A→Z</option>
+                <option value="recent">Más recientes</option>
+                <option value="price_asc">Precio ↑</option>
+                <option value="price_desc">Precio ↓</option>
+              </select>
+            </div>
+          </div>
+
+          {!preset && (
+            <>
+          {/* Divider */}
+          <div style={{ borderTop: '1px solid var(--border)', margin: '14px 0' }} />
+
+          {/* Club / Selección */}
+          {sectionTitle('Categoría')}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+            {pill('Todos', !clubSel, () => setClubSelReset(''))}
+            {pill('⚽ Clubes', clubSel==='club', () => setClubSelReset('club'))}
+            {pill('🌍 Selecciones', clubSel==='seleccion', () => setClubSelReset('seleccion'))}
+          </div>
+
+            </>
+          )}
+
+          {!preset && drillBlock}
+
           {/* Clear filters */}
           {hasFilters && (
-            <div style={{ marginTop: '14px', borderTop: '1px solid #1e1e1e', paddingTop: '12px' }}>
-              <button onClick={() => { setTipoCat('all'); setVersion('all'); setStock('all'); setRetro(false); setClubSelReset(''); setSearch(''); setSortBy('name_asc') }}
-                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid #2a2a2a', background: 'none', color: '#888', fontSize: '12px', cursor: 'pointer' }}>
+            <div style={{ marginTop: '14px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
+              <button onClick={clearAll}
+                style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border2)', background: 'none', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer' }}>
                 ✕ Limpiar filtros
               </button>
             </div>
@@ -247,21 +274,27 @@ export default function Catalog({ products, loading, onSelectProduct, favorites,
         </div>
       )}
 
-      <div style={{ fontSize: '12px', color: '#555', marginBottom: '14px' }}>
+      {(preset === 'club' || preset === 'seleccion') && (
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '4px 16px 14px', marginBottom: '14px' }}>
+          {drillBlock}
+        </div>
+      )}
+
+      <div style={{ fontSize: '12px', color: 'var(--faint)', marginBottom: '14px' }}>
         {filtered.length} producto{filtered.length!==1?'s':''}
         {hasFilters && <span style={{ color: '#cc1a1a', marginLeft: '6px' }}>· filtrado</span>}
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#444' }}>
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--faint)' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🐺</div>
           <div>Cargando catálogo...</div>
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#444' }}>
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--faint)' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
           <div>Sin resultados</div>
-          {hasFilters && <button onClick={() => { setTipoCat('all'); setVersion('all'); setStock('all'); setRetro(false); setClubSelReset(''); setSearch('') }} style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '8px', border: '1px solid #cc1a1a', background: 'none', color: '#cc1a1a', fontSize: '13px', cursor: 'pointer' }}>Limpiar filtros</button>}
+          {hasFilters && <button onClick={clearAll} style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '8px', border: '1px solid #cc1a1a', background: 'none', color: '#cc1a1a', fontSize: '13px', cursor: 'pointer' }}>Limpiar filtros</button>}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px' }}>

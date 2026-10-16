@@ -6,7 +6,7 @@ const TIPOS = ['camiseta', 'short', 'cortavientos', 'entrenamiento', 'ropa']
 const VERSIONS = ['fan', 'player']
 const TALLAS = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 const ESTADOS_PEDIDO = ['pendiente', 'en proceso', 'listo', 'entregado', 'cancelado']
-const ESTADO_COLORS = { pendiente: '#f59e0b', 'en proceso': '#3b82f6', listo: '#22c55e', entregado: '#888', cancelado: '#ef4444' }
+const ESTADO_COLORS = { pendiente: 'var(--amber)', 'en proceso': '#3b82f6', listo: 'var(--green)', entregado: 'var(--muted)', cancelado: '#ef4444' }
 
 const AUTO_PRICES = {
   camiseta: { fan: { corta: 19990, larga: 24990 }, player: { corta: 27990, larga: 34990 } },
@@ -30,26 +30,26 @@ function StockEditor({ product, onSave, onCancel }) {
   const [tallas, setTallas] = useState(product.tallas_stock || [])
   const toggle = (t) => setTallas(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   return (
-    <div style={{ background: '#0a1a0a', border: '2px solid #22c55e', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-      <div style={{ fontSize: '14px', fontWeight: 700, color: '#4ade80', marginBottom: '4px' }}>📦 Stock — {product.nombre}</div>
-      <div style={{ fontSize: '11px', color: '#666', marginBottom: '10px' }}>Las tallas sin marcar igual se pueden pedir a pedido.</div>
+    <div style={{ background: 'var(--tint-green)', border: '2px solid var(--green)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green)', marginBottom: '4px' }}>📦 Stock — {product.nombre}</div>
+      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px' }}>Las tallas sin marcar igual se pueden pedir a pedido.</div>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
         {TALLAS.map(t => {
           const sel = tallas.includes(t)
           return (
             <button key={t} type="button" onClick={() => toggle(t)}
-              style={{ padding: '8px 14px', borderRadius: '8px', border: `2px solid ${sel ? '#22c55e' : '#2a2a2a'}`, background: sel ? '#14532d' : '#1a1a1a', color: sel ? '#4ade80' : '#888', fontSize: '14px', fontWeight: sel ? 700 : 400, cursor: 'pointer' }}>
+              style={{ padding: '8px 14px', borderRadius: '8px', border: `2px solid ${sel ? 'var(--green)' : 'var(--border2)'}`, background: sel ? 'var(--tint-green)' : 'var(--card2)', color: sel ? 'var(--green)' : 'var(--muted)', fontSize: '14px', fontWeight: sel ? 700 : 400, cursor: 'pointer' }}>
               {t}
             </button>
           )
         })}
       </div>
-      <div style={{ fontSize: '11px', marginBottom: '10px', color: tallas.length > 0 ? '#4ade80' : '#666' }}>
+      <div style={{ fontSize: '11px', marginBottom: '10px', color: tallas.length > 0 ? 'var(--green)' : 'var(--muted)' }}>
         {tallas.length > 0 ? `● Stock: ${tallas.join(' · ')}` : '○ Sin stock — todo a pedido'}
       </div>
       <div style={{ display: 'flex', gap: '8px' }}>
         <button onClick={() => onSave(product.id, tallas)} style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#166534', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>✓ Guardar stock</button>
-        <button onClick={onCancel} style={{ padding: '10px 16px', borderRadius: '8px', background: 'none', border: '1px solid #2a2a2a', color: '#666', fontSize: '13px', cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={onCancel} style={{ padding: '10px 16px', borderRadius: '8px', background: 'none', border: '1px solid var(--border2)', color: 'var(--muted)', fontSize: '13px', cursor: 'pointer' }}>Cancelar</button>
       </div>
     </div>
   )
@@ -69,13 +69,13 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
   const [adminSearch, setAdminSearch] = useState('')
   const [adminStock, setAdminStock] = useState('all')
 
-  const inp = (extra = {}) => ({ width: '100%', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', marginBottom: '10px', ...extra })
-  const lbl = { fontSize: '12px', color: '#888', marginBottom: '4px', display: 'block', fontWeight: 600 }
+  const inp = (extra = {}) => ({ width: '100%', background: 'var(--card2)', border: '1px solid var(--border2)', borderRadius: '8px', padding: '10px 12px', color: 'var(--text)', fontSize: '14px', outline: 'none', marginBottom: '10px', ...extra })
+  const lbl = { fontSize: '12px', color: 'var(--muted)', marginBottom: '4px', display: 'block', fontWeight: 600 }
 
   function navBtn(v, label) {
     return (
       <button onClick={() => { setView(v); if (v !== 'add') { setForm(defaultForm()); setImages([]); setEditId(null) } }}
-        style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${view === v ? '#cc1a1a' : '#2a2a2a'}`, background: view === v ? '#cc1a1a' : '#1a1a1a', color: view === v ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+        style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${view === v ? '#cc1a1a' : 'var(--border2)'}`, background: view === v ? '#cc1a1a' : 'var(--card2)', color: view === v ? '#fff' : 'var(--muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
         {label}
       </button>
     )
@@ -278,7 +278,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       {/* Nav */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <button onClick={() => { setView('orders'); setSelectedOrder(null) }}
-          style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${view === 'orders' ? '#cc1a1a' : '#2a2a2a'}`, background: view === 'orders' ? '#cc1a1a' : '#1a1a1a', color: view === 'orders' ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+          style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${view === 'orders' ? '#cc1a1a' : 'var(--border2)'}`, background: view === 'orders' ? '#cc1a1a' : 'var(--card2)', color: view === 'orders' ? '#fff' : 'var(--muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
           📦 Pedidos {pendingOrders > 0 && <span style={{ background: 'rgba(255,255,255,.25)', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>{pendingOrders}</span>}
         </button>
         {navBtn('list', `📋 Productos (${products.length})`)}
@@ -290,24 +290,24 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       {view === 'orders' && !selectedOrder && (
         <div>
           <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '14px' }}>Pedidos recibidos</div>
-          {loadingOrders ? <div style={{ color: '#555', padding: '20px' }}>Cargando...</div>
+          {loadingOrders ? <div style={{ color: 'var(--faint)', padding: '20px' }}>Cargando...</div>
             : orders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--faint)' }}>
                 <div style={{ fontSize: '40px', marginBottom: '10px' }}>📭</div>
                 <div>No hay pedidos aún</div>
               </div>
             ) : orders.map(order => (
               <div key={order.id} onClick={() => setSelectedOrder(order)}
-                style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '12px', padding: '14px', marginBottom: '10px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'center' }}
+                style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', marginBottom: '10px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'center' }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = '#cc1a1a'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#1e1e1e'}>
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                     <div style={{ fontSize: '14px', fontWeight: 700 }}>{order.cliente_nombre}</div>
                     <span style={{ background: ESTADO_COLORS[order.estado] + '22', color: ESTADO_COLORS[order.estado], fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', border: `1px solid ${ESTADO_COLORS[order.estado]}44` }}>{order.estado}</span>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>{order.items?.length} producto{order.items?.length !== 1 ? 's' : ''} · {new Date(order.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-                  <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{order.cliente_telefono || order.cliente_correo}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{order.items?.length} producto{order.items?.length !== 1 ? 's' : ''} · {new Date(order.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>{order.cliente_telefono || order.cliente_correo}</div>
                 </div>
                 <span style={{ color: '#cc1a1a', fontSize: '18px' }}>›</span>
               </div>
@@ -319,56 +319,56 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       {view === 'orders' && selectedOrder && (
         <div>
           <button onClick={() => setSelectedOrder(null)} style={{ background: 'none', border: 'none', color: '#cc1a1a', fontSize: '14px', cursor: 'pointer', marginBottom: '16px' }}>← Volver a pedidos</button>
-          <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
             <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               👤 {selectedOrder.cliente_nombre}
               <span style={{ background: ESTADO_COLORS[selectedOrder.estado] + '22', color: ESTADO_COLORS[selectedOrder.estado], fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '8px', border: `1px solid ${ESTADO_COLORS[selectedOrder.estado]}44` }}>{selectedOrder.estado}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px', marginBottom: '12px' }}>
-              {selectedOrder.cliente_telefono && <div><span style={{ color: '#666' }}>📱 </span>{selectedOrder.cliente_telefono}</div>}
-              {selectedOrder.cliente_correo && <div><span style={{ color: '#666' }}>✉️ </span>{selectedOrder.cliente_correo}</div>}
-              <div><span style={{ color: '#666' }}>📅 </span>{new Date(selectedOrder.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+              {selectedOrder.cliente_telefono && <div><span style={{ color: 'var(--muted)' }}>📱 </span>{selectedOrder.cliente_telefono}</div>}
+              {selectedOrder.cliente_correo && <div><span style={{ color: 'var(--muted)' }}>✉️ </span>{selectedOrder.cliente_correo}</div>}
+              <div><span style={{ color: 'var(--muted)' }}>📅 </span>{new Date(selectedOrder.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
             </div>
-            {selectedOrder.notas && <div style={{ background: '#1e1e1e', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#ccc' }}>📝 {selectedOrder.notas}</div>}
+            {selectedOrder.notas && <div style={{ background: 'var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text2)' }}>📝 {selectedOrder.notas}</div>}
           </div>
-          <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
             <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>Productos del pedido</div>
             {selectedOrder.items?.map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: i < selectedOrder.items.length - 1 ? '1px solid #1e1e1e' : 'none', alignItems: 'center' }}>
-                <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', background: '#1a1a1a', flexShrink: 0 }}>
+              <div key={i} style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: i < selectedOrder.items.length - 1 ? '1px solid var(--border)' : 'none', alignItems: 'center' }}>
+                <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', background: 'var(--card2)', flexShrink: 0 }}>
                   {item.image ? <img src={STORAGE_URL + item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>👕</div>}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: 600 }}>{item.productName}</div>
-                  <div style={{ fontSize: '12px', color: '#888' }}>Talla: {item.size} · {item.version === 'player' ? '⚡ Player' : 'Fan'}</div>
-                  {item.estampado && <div style={{ fontSize: '12px', color: '#f59e0b' }}>✍️ {item.estName} #{item.estNum}</div>}
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Talla: {item.size} · {item.version === 'player' ? '⚡ Player' : 'Fan'}</div>
+                  {item.estampado && <div style={{ fontSize: '12px', color: 'var(--amber)' }}>✍️ {item.estName} #{item.estNum}</div>}
                 </div>
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#cc1a1a' }}>${item.total?.toLocaleString('es-CL')}</div>
               </div>
             ))}
-            <div style={{ borderTop: '1px solid #2a2a2a', marginTop: '10px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700 }}>
+            <div style={{ borderTop: '1px solid var(--border2)', marginTop: '10px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700 }}>
               <span>Total</span>
               <span style={{ color: '#cc1a1a' }}>${selectedOrder.items?.reduce((a, b) => a + (b.total || 0), 0).toLocaleString('es-CL')}</span>
             </div>
           </div>
           <div style={{ background: '#0a1400', border: '1px solid #166534', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px', color: '#4ade80' }}>📋 Formato para proveedor</div>
-            <pre style={{ fontSize: '13px', color: '#e0e0e0', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.8, background: '#1a1a1a', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>{generateProviderText(selectedOrder)}</pre>
+            <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px', color: 'var(--green)' }}>📋 Formato para proveedor</div>
+            <pre style={{ fontSize: '13px', color: 'var(--text2)', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.8, background: 'var(--card2)', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>{generateProviderText(selectedOrder)}</pre>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => { navigator.clipboard.writeText(generateProviderText(selectedOrder)); alert('¡Copiado!') }}
                 style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#166534', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>📋 Copiar texto</button>
               <button onClick={() => generateOrderImage(selectedOrder)}
-                style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#1a3a2a', border: '1px solid #166534', color: '#4ade80', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>🖼️ Generar imagen</button>
+                style={{ flex: 1, padding: '11px', borderRadius: '8px', background: '#1a3a2a', border: '1px solid #166534', color: 'var(--green)', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>🖼️ Generar imagen</button>
             </div>
             <canvas id="order-canvas" style={{ display: 'none' }} />
             <div id="order-img-wrap" style={{ marginTop: '10px' }} />
           </div>
-          <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '18px' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '18px' }}>
             <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '10px' }}>Estado del pedido</div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {ESTADOS_PEDIDO.map(estado => (
                 <button key={estado} onClick={() => updateOrderStatus(selectedOrder.id, estado)}
-                  style={{ padding: '7px 14px', borderRadius: '8px', border: `1px solid ${selectedOrder.estado === estado ? ESTADO_COLORS[estado] : '#2a2a2a'}`, background: selectedOrder.estado === estado ? ESTADO_COLORS[estado] + '33' : '#1a1a1a', color: selectedOrder.estado === estado ? ESTADO_COLORS[estado] : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ padding: '7px 14px', borderRadius: '8px', border: `1px solid ${selectedOrder.estado === estado ? ESTADO_COLORS[estado] : 'var(--border2)'}`, background: selectedOrder.estado === estado ? ESTADO_COLORS[estado] + '33' : 'var(--card2)', color: selectedOrder.estado === estado ? ESTADO_COLORS[estado] : 'var(--muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                   {estado}
                 </button>
               ))}
@@ -381,46 +381,46 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
       {view === 'list' && (
         <div>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', background: '#141414', border: '1px solid #1e1e1e', borderRadius: '8px', padding: '8px 12px', gap: '6px' }}>
-              <span style={{ color: '#444' }}>🔍</span>
+            <div style={{ flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', gap: '6px' }}>
+              <span style={{ color: 'var(--faint)' }}>🔍</span>
               <input value={adminSearch} onChange={e => setAdminSearch(e.target.value)} placeholder="Buscar producto..."
-                style={{ background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '13px', flex: 1 }} />
-              {adminSearch && <button onClick={() => setAdminSearch('')} style={{ background: 'none', border: 'none', color: '#555', fontSize: '16px', cursor: 'pointer' }}>×</button>}
+                style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontSize: '13px', flex: 1 }} />
+              {adminSearch && <button onClick={() => setAdminSearch('')} style={{ background: 'none', border: 'none', color: 'var(--faint)', fontSize: '16px', cursor: 'pointer' }}>×</button>}
             </div>
             <div style={{ display: 'flex', gap: '5px' }}>
               {[['all', 'Todo'], ['stock', '● Stock'], ['pedido', '○ Pedido']].map(([v, l]) => (
                 <button key={v} onClick={() => setAdminStock(v)}
-                  style={{ padding: '7px 12px', borderRadius: '8px', border: `1px solid ${adminStock === v ? '#cc1a1a' : '#2a2a2a'}`, background: adminStock === v ? '#cc1a1a' : '#141414', color: adminStock === v ? '#fff' : '#888', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ padding: '7px 12px', borderRadius: '8px', border: `1px solid ${adminStock === v ? '#cc1a1a' : 'var(--border2)'}`, background: adminStock === v ? '#cc1a1a' : 'var(--card)', color: adminStock === v ? '#fff' : 'var(--muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                   {l}
                 </button>
               ))}
             </div>
           </div>
-          <div style={{ fontSize: '11px', color: '#555', marginBottom: '10px' }}>{adminFiltered.length} de {products.length} productos</div>
+          <div style={{ fontSize: '11px', color: 'var(--faint)', marginBottom: '10px' }}>{adminFiltered.length} de {products.length} productos</div>
           {editingStockProduct && <StockEditor product={editingStockProduct} onSave={saveStockOnly} onCancel={() => setEditingStockProduct(null)} />}
           {adminFiltered.map(p => (
-            <div key={p.id} style={{ background: '#141414', border: `1px solid ${editingStockProduct?.id === p.id ? '#22c55e' : '#1e1e1e'}`, borderRadius: '12px', padding: '12px 14px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', background: '#1a1a1a', flexShrink: 0 }}>
+            <div key={p.id} style={{ background: 'var(--card)', border: `1px solid ${editingStockProduct?.id === p.id ? 'var(--green)' : 'var(--border)'}`, borderRadius: '12px', padding: '12px 14px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', background: 'var(--card2)', flexShrink: 0 }}>
                 {p.imagenes?.[0] ? <img src={STORAGE_URL + p.imagenes[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>👕</div>}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '3px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, color: p.version === 'player' ? '#a78bfa' : '#888', background: p.version === 'player' ? '#1a0a2a' : '#1e1e1e', padding: '2px 6px', borderRadius: '5px' }}>{p.version?.toUpperCase()}</span>
-                  <span style={{ fontSize: '10px', fontWeight: 700, color: p.tallas_stock?.length > 0 ? '#4ade80' : '#f59e0b', background: p.tallas_stock?.length > 0 ? '#0a1a0a' : '#1a1400', padding: '2px 6px', borderRadius: '5px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: p.version === 'player' ? 'var(--purple)' : 'var(--muted)', background: p.version === 'player' ? 'var(--tint-purple)' : 'var(--border)', padding: '2px 6px', borderRadius: '5px' }}>{p.version?.toUpperCase()}</span>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: p.tallas_stock?.length > 0 ? 'var(--green)' : 'var(--amber)', background: p.tallas_stock?.length > 0 ? 'var(--tint-green)' : 'var(--tint-amber)', padding: '2px 6px', borderRadius: '5px' }}>
                     {p.tallas_stock?.length > 0 ? `● ${p.tallas_stock.join(' ')}` : '○ A pedido'}
                   </span>
-                  {p.retro && <span style={{ fontSize: '10px', color: '#f59e0b', background: '#2a1500', padding: '2px 6px', borderRadius: '5px' }}>Retro</span>}
-                  {p.destacada && <span style={{ fontSize: '10px', color: '#fbbf24', background: '#1a1400', padding: '2px 6px', borderRadius: '5px' }}>⭐</span>}
+                  {p.retro && <span style={{ fontSize: '10px', color: 'var(--amber)', background: 'var(--tint-amber)', padding: '2px 6px', borderRadius: '5px' }}>Retro</span>}
+                  {p.destacada && <span style={{ fontSize: '10px', color: 'var(--amber)', background: 'var(--tint-amber)', padding: '2px 6px', borderRadius: '5px' }}>⭐</span>}
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{p.nombre}</div>
-                <div style={{ fontSize: '12px', color: '#555' }}>{p.tipo_producto} · {p.color}</div>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{p.nombre}</div>
+                <div style={{ fontSize: '12px', color: 'var(--faint)' }}>{p.tipo_producto} · {p.color}</div>
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#cc1a1a' }}>${p.precio?.toLocaleString('es-CL')}</div>
               </div>
               <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
                 <button onClick={() => setEditingStockProduct(editingStockProduct?.id === p.id ? null : p)} title="Editar stock"
-                  style={{ background: p.tallas_stock?.length > 0 ? '#0a1a0a' : '#1a1a1a', border: `1px solid ${p.tallas_stock?.length > 0 ? '#22c55e' : '#2a2a2a'}`, color: p.tallas_stock?.length > 0 ? '#4ade80' : '#888', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>📦</button>
-                <button onClick={() => startEdit(p)} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>✏️</button>
-                <button onClick={() => deleteProduct(p.id)} style={{ background: '#1a0000', border: '1px solid #2a0a0a', color: '#cc1a1a', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>🗑️</button>
+                  style={{ background: p.tallas_stock?.length > 0 ? 'var(--tint-green)' : 'var(--card2)', border: `1px solid ${p.tallas_stock?.length > 0 ? 'var(--green)' : 'var(--border2)'}`, color: p.tallas_stock?.length > 0 ? 'var(--green)' : 'var(--muted)', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>📦</button>
+                <button onClick={() => startEdit(p)} style={{ background: 'var(--card2)', border: '1px solid var(--border2)', color: 'var(--text2)', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>✏️</button>
+                <button onClick={() => deleteProduct(p.id)} style={{ background: 'var(--accent-soft)', border: '1px solid var(--tint-red)', color: '#cc1a1a', borderRadius: '7px', padding: '6px 10px', fontSize: '13px', cursor: 'pointer' }}>🗑️</button>
               </div>
             </div>
           ))}
@@ -465,7 +465,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
               <label style={lbl}>
                 Precio (CLP) *
                 {getAutoPrice(form.tipo_producto, form.version, form.manga) && (
-                  <span style={{ fontWeight: 400, color: '#4ade80', marginLeft: '6px' }}>
+                  <span style={{ fontWeight: 400, color: 'var(--green)', marginLeft: '6px' }}>
                     → ${parseInt(getAutoPrice(form.tipo_producto, form.version, form.manga)).toLocaleString('es-CL')} (auto)
                   </span>
                 )}
@@ -488,11 +488,11 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingTop: '20px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', fontSize: '13px', color: '#ccc', margin: 0 }}>
-                <input type="checkbox" checked={form.retro} onChange={e => setForm(f => ({ ...f, retro: e.target.checked }))} style={{ accentColor: '#f59e0b', width: 'auto', margin: 0 }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', fontSize: '13px', color: 'var(--text2)', margin: 0 }}>
+                <input type="checkbox" checked={form.retro} onChange={e => setForm(f => ({ ...f, retro: e.target.checked }))} style={{ accentColor: 'var(--amber)', width: 'auto', margin: 0 }} />
                 Retro 🕰️
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', fontSize: '13px', color: '#ccc', margin: 0 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer', fontSize: '13px', color: 'var(--text2)', margin: 0 }}>
                 <input type="checkbox" checked={form.destacada} onChange={e => setForm(f => ({ ...f, destacada: e.target.checked }))} style={{ accentColor: '#cc1a1a', width: 'auto', margin: 0 }} />
                 Destacada ⭐
               </label>
@@ -508,36 +508,36 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
             {products.filter(p => p.id !== editId).map(p => <option key={p.id} value={p.id}>{p.nombre} ({p.version})</option>)}
           </select>
 
-          <label style={lbl}>Tallas en stock <span style={{ fontWeight: 400, color: '#555' }}>(el resto igual se puede pedir)</span></label>
+          <label style={lbl}>Tallas en stock <span style={{ fontWeight: 400, color: 'var(--faint)' }}>(el resto igual se puede pedir)</span></label>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
             {TALLAS.map(t => {
               const sel = form.tallas_stock.includes(t)
               return (
                 <button key={t} type="button"
                   onClick={() => setForm(f => ({ ...f, tallas_stock: sel ? f.tallas_stock.filter(x => x !== t) : [...f.tallas_stock, t] }))}
-                  style={{ padding: '9px 16px', borderRadius: '8px', border: `2px solid ${sel ? '#22c55e' : '#2a2a2a'}`, background: sel ? '#14532d' : '#1a1a1a', color: sel ? '#4ade80' : '#888', fontSize: '14px', fontWeight: sel ? 700 : 400, cursor: 'pointer' }}>
+                  style={{ padding: '9px 16px', borderRadius: '8px', border: `2px solid ${sel ? 'var(--green)' : 'var(--border2)'}`, background: sel ? 'var(--tint-green)' : 'var(--card2)', color: sel ? 'var(--green)' : 'var(--muted)', fontSize: '14px', fontWeight: sel ? 700 : 400, cursor: 'pointer' }}>
                   {t}
                 </button>
               )
             })}
           </div>
           {form.tallas_stock.length > 0
-            ? <div style={{ fontSize: '11px', color: '#4ade80', marginBottom: '14px' }}>● Stock: {form.tallas_stock.join(' · ')}</div>
-            : <div style={{ fontSize: '11px', color: '#666', marginBottom: '14px' }}>○ Sin stock — todo a pedido</div>}
+            ? <div style={{ fontSize: '11px', color: 'var(--green)', marginBottom: '14px' }}>● Stock: {form.tallas_stock.join(' · ')}</div>
+            : <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '14px' }}>○ Sin stock — todo a pedido</div>}
 
           {/* Images */}
           <label style={lbl}>Fotos ({images.length} subidas)</label>
           <div onPaste={handlePaste} tabIndex={0}
-            style={{ border: '2px dashed #cc1a1a', borderRadius: '10px', padding: '14px', textAlign: 'center', marginBottom: '8px', color: '#aaa', fontSize: '13px', outline: 'none', background: '#1a0000', cursor: 'default' }}>
+            style={{ border: '2px dashed #cc1a1a', borderRadius: '10px', padding: '14px', textAlign: 'center', marginBottom: '8px', color: 'var(--text2)', fontSize: '13px', outline: 'none', background: 'var(--accent-soft)', cursor: 'default' }}>
             <div style={{ fontSize: '20px', marginBottom: '4px' }}>📋</div>
             <div style={{ fontWeight: 700, color: '#cc1a1a', marginBottom: '2px' }}>Pega aquí con Ctrl+V</div>
-            <div style={{ fontSize: '11px', color: '#555' }}>Copia la imagen en Yupoo y pega aquí</div>
+            <div style={{ fontSize: '11px', color: 'var(--faint)' }}>Copia la imagen en Yupoo y pega aquí</div>
           </div>
-          <label style={{ display: 'block', border: '2px dashed #2a2a2a', borderRadius: '10px', padding: '12px', textAlign: 'center', cursor: 'pointer', marginBottom: '8px', color: '#555', fontSize: '13px' }}>
+          <label style={{ display: 'block', border: '2px dashed var(--border2)', borderRadius: '10px', padding: '12px', textAlign: 'center', cursor: 'pointer', marginBottom: '8px', color: 'var(--faint)', fontSize: '13px' }}>
             <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => uploadImages([...e.target.files])} />
             📁 O selecciona archivos desde tu computador
           </label>
-          {uploadStatus && <div style={{ fontSize: '12px', color: uploadStatus.startsWith('Error') ? '#cc1a1a' : '#4ade80', marginBottom: '8px', padding: '6px 10px', background: '#1a1a1a', borderRadius: '6px' }}>{uploadStatus}</div>}
+          {uploadStatus && <div style={{ fontSize: '12px', color: uploadStatus.startsWith('Error') ? '#cc1a1a' : 'var(--green)', marginBottom: '8px', padding: '6px 10px', background: 'var(--card2)', borderRadius: '6px' }}>{uploadStatus}</div>}
           {images.length > 0 && (
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
               {images.map((img, i) => (
@@ -557,7 +557,7 @@ export default function AdminPanel({ products, config, setConfig, reloadProducts
               {saving ? 'Guardando...' : editId ? 'Guardar cambios' : 'Agregar producto'}
             </button>
             <button onClick={() => { setView('list'); setForm(defaultForm()); setImages([]); setEditId(null) }}
-              style={{ padding: '14px 20px', borderRadius: '10px', background: 'none', border: '1px solid #2a2a2a', color: '#666', fontSize: '14px', cursor: 'pointer' }}>
+              style={{ padding: '14px 20px', borderRadius: '10px', background: 'none', border: '1px solid var(--border2)', color: 'var(--muted)', fontSize: '14px', cursor: 'pointer' }}>
               Cancelar
             </button>
           </div>

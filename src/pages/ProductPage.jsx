@@ -60,7 +60,7 @@ export default function ProductPage({ product, products, config, onAddToCart, on
         {/* Images */}
         <div>
           <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-            style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: '#141414', aspectRatio: '1', marginBottom: '10px', userSelect: 'none' }}>
+            style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: 'var(--card)', aspectRatio: '1', marginBottom: '10px', userSelect: 'none' }}>
             {images.length > 0
               ? <img src={STORAGE_URL + images[imgIndex]} alt={product.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px' }}>👕</div>
@@ -94,36 +94,36 @@ export default function ProductPage({ product, products, config, onAddToCart, on
           {/* Badges + fav */}
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
             {hasStock
-              ? <span style={{ background: '#14532d', color: '#4ade80', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #16a34a' }}>● En stock: {product.tallas_stock.join(', ')}</span>
-              : <span style={{ background: '#1c1c1c', color: '#f59e0b', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #3a2800' }}>○ A pedido</span>
+              ? <span style={{ background: 'var(--tint-green)', color: 'var(--green)', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #16a34a' }}>● En stock: {product.tallas_stock.join(', ')}</span>
+              : <span style={{ background: 'var(--card2)', color: 'var(--amber)', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #3a2800' }}>○ A pedido</span>
             }
-            {isPlayer && <span style={{ background: '#1a0a2a', color: '#a78bfa', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #7c3aed' }}>PLAYER VERSION</span>}
-            {product.retro && <span style={{ background: '#2a1500', color: '#f59e0b', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px' }}>Retro</span>}
+            {isPlayer && <span style={{ background: 'var(--tint-purple)', color: 'var(--purple)', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', border: '1px solid #7c3aed' }}>PLAYER VERSION</span>}
+            {product.retro && <span style={{ background: 'var(--tint-amber)', color: 'var(--amber)', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '8px' }}>Retro</span>}
             <button onClick={() => onToggleFav && onToggleFav(product.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer' }}>
               {isFav ? '❤️' : '🤍'}
             </button>
           </div>
 
           <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '6px', lineHeight: 1.2 }}>{product.nombre}</h1>
-          <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>{product.color}</div>
+          <div style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '10px' }}>{product.color}</div>
 
           <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '16px' }}>
-            {product.categorias?.map(c => <span key={c} style={{ fontSize: '11px', background: '#1e1e1e', color: '#888', borderRadius: '6px', padding: '3px 8px', border: '1px solid #2a2a2a' }}>{c}</span>)}
+            {product.categorias?.map(c => <span key={c} style={{ fontSize: '11px', background: 'var(--border)', color: 'var(--muted)', borderRadius: '6px', padding: '3px 8px', border: '1px solid var(--border2)' }}>{c}</span>)}
           </div>
 
           <div style={{ fontSize: '32px', fontWeight: 800, color: '#cc1a1a', marginBottom: '20px' }}>
             ${total.toLocaleString('es-CL')}
-            {estExtra > 0 && <span style={{ fontSize: '12px', color: '#f59e0b', marginLeft: '8px', fontWeight: 600 }}>+${estExtra.toLocaleString('es-CL')} estampado</span>}
+            {estExtra > 0 && <span style={{ fontSize: '12px', color: 'var(--amber)', marginLeft: '8px', fontWeight: 600 }}>+${estExtra.toLocaleString('es-CL')} estampado</span>}
           </div>
 
           {/* Linked version */}
           {linkedProduct && (
-            <div style={{ background: '#141414', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => onSelectProduct(linkedProduct)}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#1a1a1a' }}>
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border2)', borderRadius: '10px', padding: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => onSelectProduct(linkedProduct)}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'var(--card2)' }}>
                 {linkedProduct.imagenes?.[0] && <img src={STORAGE_URL + linkedProduct.imagenes[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>Ver versión {isPlayer ? 'Fan' : 'Player'}</div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '2px' }}>Ver versión {isPlayer ? 'Fan' : 'Player'}</div>
                 <div style={{ fontSize: '13px', fontWeight: 600 }}>{linkedProduct.nombre}</div>
                 <div style={{ fontSize: '13px', color: '#cc1a1a', fontWeight: 700 }}>${linkedProduct.precio?.toLocaleString('es-CL')}</div>
               </div>
@@ -133,52 +133,52 @@ export default function ProductPage({ product, products, config, onAddToCart, on
 
           {/* Size */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', color: '#888', fontWeight: 600, marginBottom: '8px' }}>Talla</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 600, marginBottom: '8px' }}>Talla</div>
             <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
               {SIZES.map(s => {
                 const hasStockSize = hasStock && product.tallas_stock?.includes(s)
                 const isSelected = size === s
                 return (
                   <button key={s} onClick={() => setSize(s)}
-                    style={{ padding: '9px 16px', borderRadius: '9px', border: `2px solid ${isSelected ? '#cc1a1a' : hasStockSize ? '#22c55e' : '#2a2a2a'}`, background: isSelected ? '#cc1a1a' : hasStockSize ? '#14532d' : '#141414', color: isSelected ? '#fff' : hasStockSize ? '#4ade80' : '#aaa', fontSize: '14px', fontWeight: isSelected || hasStockSize ? 700 : 400, minWidth: '50px', cursor: 'pointer', position: 'relative' }}>
+                    style={{ padding: '9px 16px', borderRadius: '9px', border: `2px solid ${isSelected ? '#cc1a1a' : hasStockSize ? 'var(--green)' : 'var(--border2)'}`, background: isSelected ? '#cc1a1a' : hasStockSize ? 'var(--tint-green)' : 'var(--card)', color: isSelected ? '#fff' : hasStockSize ? 'var(--green)' : 'var(--text2)', fontSize: '14px', fontWeight: isSelected || hasStockSize ? 700 : 400, minWidth: '50px', cursor: 'pointer', position: 'relative' }}>
                     {s}
-                    {hasStockSize && !isSelected && <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '9px', height: '9px', background: '#22c55e', borderRadius: '50%', border: '2px solid #141414' }} />}
+                    {hasStockSize && !isSelected && <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '9px', height: '9px', background: 'var(--green)', borderRadius: '50%', border: '2px solid var(--card)' }} />}
                   </button>
                 )
               })}
             </div>
-            <div style={{ fontSize: '11px', color: '#555', marginTop: '6px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--faint)', marginTop: '6px' }}>
               {hasStock ? '● Verde = en stock · Resto = a pedido (igual puedes encargar)' : '○ Todas las tallas disponibles a pedido'}
             </div>
           </div>
 
           {/* Estampado */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', color: '#888', fontWeight: 600, marginBottom: '8px' }}>¿Agregar nombre y número?</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 600, marginBottom: '8px' }}>¿Agregar nombre y número?</div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-              <button onClick={() => setWantsEstampado(true)} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === true ? '#cc1a1a' : '#2a2a2a'}`, background: wantsEstampado === true ? '#cc1a1a' : '#141414', color: wantsEstampado === true ? '#fff' : '#aaa', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={() => setWantsEstampado(true)} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === true ? '#cc1a1a' : 'var(--border2)'}`, background: wantsEstampado === true ? '#cc1a1a' : 'var(--card)', color: wantsEstampado === true ? '#fff' : 'var(--text2)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                 ✅ Sí (+${(config.recargo_estampado || 3000).toLocaleString('es-CL')})
               </button>
-              <button onClick={() => { setWantsEstampado(false); setEstName(''); setEstNum('') }} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === false ? '#cc1a1a' : '#2a2a2a'}`, background: wantsEstampado === false ? '#1a0000' : '#141414', color: wantsEstampado === false ? '#ff6666' : '#aaa', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={() => { setWantsEstampado(false); setEstName(''); setEstNum('') }} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `1px solid ${wantsEstampado === false ? '#cc1a1a' : 'var(--border2)'}`, background: wantsEstampado === false ? 'var(--accent-soft)' : 'var(--card)', color: wantsEstampado === false ? '#ff6666' : 'var(--text2)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                 ❌ No
               </button>
             </div>
             {wantsEstampado === true && (
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input value={estName} onChange={e => setEstName(e.target.value)} placeholder="Nombre" style={{ flex: 2, background: '#1a1a1a', border: '1px solid #cc1a1a', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none' }} />
-                <input value={estNum} onChange={e => setEstNum(e.target.value)} placeholder="Número" type="number" style={{ flex: 1, background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none' }} />
+                <input value={estName} onChange={e => setEstName(e.target.value)} placeholder="Nombre" style={{ flex: 2, background: 'var(--card2)', border: '1px solid #cc1a1a', borderRadius: '8px', padding: '10px 12px', color: 'var(--text)', fontSize: '14px', outline: 'none' }} />
+                <input value={estNum} onChange={e => setEstNum(e.target.value)} placeholder="Número" type="number" style={{ flex: 1, background: 'var(--card2)', border: '1px solid var(--border2)', borderRadius: '8px', padding: '10px 12px', color: 'var(--text)', fontSize: '14px', outline: 'none' }} />
               </div>
             )}
           </div>
 
           {/* Add to cart */}
           <button onClick={handleAdd} disabled={!size || wantsEstampado === null}
-            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: added ? '#14532d' : (size && wantsEstampado !== null) ? '#cc1a1a' : '#2a2a2a', border: 'none', color: (size && wantsEstampado !== null) ? '#fff' : '#555', fontSize: '16px', fontWeight: 700, cursor: (size && wantsEstampado !== null) ? 'pointer' : 'not-allowed', transition: 'background .3s' }}>
+            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: added ? '#14532d' : (size && wantsEstampado !== null) ? '#cc1a1a' : 'var(--border2)', border: 'none', color: (size && wantsEstampado !== null) ? '#fff' : 'var(--faint)', fontSize: '16px', fontWeight: 700, cursor: (size && wantsEstampado !== null) ? 'pointer' : 'not-allowed', transition: 'background .3s' }}>
             {added ? '✓ Agregado al carrito' : `🛒 Agregar — $${total.toLocaleString('es-CL')}`}
           </button>
 
           {(!size || wantsEstampado === null) && (
-            <div style={{ fontSize: '12px', color: '#555', textAlign: 'center', marginTop: '8px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--faint)', textAlign: 'center', marginTop: '8px' }}>
               {!size && wantsEstampado === null ? 'Selecciona talla y si quieres estampado' : !size ? 'Selecciona una talla' : 'Indica si quieres estampado'}
             </div>
           )}
